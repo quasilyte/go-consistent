@@ -10,17 +10,22 @@ This installs `go-consistent` binary under your `$GOPATH/bin`:
 go get github.com/Quasilyte/go-consistent
 ```
 
-If `$GOPATH/bin` is under your system `$PATH`, `go-consistent` command should be available after that.
+If `$GOPATH/bin` is under your system `$PATH`, `go-consistent` command should be available after that.<br>
 This should print the help message:
 
 ```bash
-go-consistency --help
+go-consistenct --help
 ```
 
 You can pass package names and separate Go filenames to the `go-consistent` tool:
 
 ```bash
-go-consistency foo.go bar.go mypkg
+go-consistenct foo.go bar.go mypkg
 ```
 
-Arguments like `...` are planned, but are not implemented yet.
+> Arguments like `...` are planned, but are not implemented yet.
+
+`go-consistent` checks provided Go source code for consistency.
+
+* If you want to check consistency of a single file or package, just provide their name
+* If you want to check the whole project consistency, you should pass **all** its packages as an arguments
