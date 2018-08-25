@@ -67,6 +67,45 @@ func (emptySliceLitMatcher) Match(n ast.Node) bool {
 	return typeof.IsSlice(e.Type) && len(e.Elts) == 0
 }
 
+type nilSliceVarMatcher struct{ matcherBase }
+
+func (nilSliceVarMatcher) Match(n ast.Node) bool {
+	// TODO(quasilyte): can this be simplified with type assertion to GenDecl?
+	s, ok := n.(*ast.DeclStmt)
+	if !ok {
+		return false
+	}
+	d := s.Decl.(*ast.GenDecl)
+	if d.Tok != token.VAR {
+		return false
+	}
+	// TODO(quasilyte): handle multi-spec var decls.
+	if len(d.Specs) != 1 {
+		return false
+	}
+	spec := d.Specs[0].(*ast.ValueSpec)
+	// TODO(quasilyte): handle multi-name var decls.
+	if len(spec.Names) != 1 {
+		return false
+	}
+	if spec.Values != nil {
+		return false
+	}
+	return typeof.IsSlice(spec.Type)
+}
+
+type nilSliceLitMatcher struct{ matcherBase }
+
+func (nilSliceLitMatcher) Match(n ast.Node) bool {
+	e, ok := n.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	return len(e.Args) == 1 &&
+		valueOf(e.Args[0]) == "nil" &&
+		typeof.IsSlice(e.Fun)
+}
+
 type emptyMapMakeMatcher struct{ matcherBase }
 
 func (emptyMapMakeMatcher) Match(n ast.Node) bool {

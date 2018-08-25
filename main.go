@@ -81,6 +81,14 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		{
+			name: "nil slice",
+			variants: []*opVariant{
+				{name: "nil-slice-var", matcher: nilSliceVarMatcher{}},
+				{name: "nil-slice-lit", matcher: nilSliceLitMatcher{}},
+			},
+		},
+
+		{
 			name: "empty map",
 			variants: []*opVariant{
 				{name: "empty-map-make", matcher: emptyMapMakeMatcher{}},
@@ -89,7 +97,6 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		// TODO(quasilyte): nil map
-		// TODO(quasilyte): nil slice
 	}
 }
 
@@ -196,6 +203,8 @@ func valueOf(x ast.Expr) string {
 	switch x := x.(type) {
 	case *ast.BasicLit:
 		return x.Value
+	case *ast.Ident:
+		return x.Name
 	default:
 		return ""
 	}

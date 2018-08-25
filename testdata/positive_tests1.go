@@ -21,6 +21,13 @@ func emptySlice() {
 	_ = []string{}
 }
 
+func nilSlice() {
+	var s1 []int
+	var s2 []*T
+	//= nil slice: use nil-slice-var instead of nil-slice-lit
+	_ = []string(nil)
+}
+
 func emptyMap() {
 	_ = make(map[T]T)
 	_ = make(map[*T]*T)
