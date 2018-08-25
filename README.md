@@ -14,13 +14,13 @@ If `$GOPATH/bin` is under your system `$PATH`, `go-consistent` command should be
 This should print the help message:
 
 ```bash
-go-consistenct --help
+go-consistent --help
 ```
 
 You can pass package names and separate Go filenames to the `go-consistent` tool:
 
 ```bash
-go-consistenct foo.go bar.go mypkg
+go-consistent foo.go bar.go mypkg
 ```
 
 > Arguments like `...` are planned, but are not implemented yet.
