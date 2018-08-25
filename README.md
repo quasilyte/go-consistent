@@ -43,8 +43,8 @@ c := make(map[int]string)
 `a`, `b` and `c` are initialized to an empty, non-nil map.
 The problem is that you have at least 2 ways to do it:
 
-1. `a` and `b` use the first option, the map literal.
-2. `c` uses the second option, the `make` function.
+1. `a` and `b` use the first option, the map literal
+2. `c` uses the second option, the `make` function
 
 Neither of these are the "best", but on the package or project level, you might want to prefer
 only one of them, for consistency reasons.
