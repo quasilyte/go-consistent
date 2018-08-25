@@ -7,7 +7,7 @@ type T struct {
 	integer int
 }
 
-func zeroValuePointerAllocation1() {
+func zeroValuePointerAllocation() {
 	_ = new(T)
 	_ = new(T)
 	//= zero value pointer allocation: use new instead of address-of-lit
