@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -23,14 +24,25 @@ func main() {
 		log.Fatalf("infer conventions: %v", err)
 	}
 	ctxt.SetupSuggestions()
-	if err := visitFiles(&ctxt, filenames, ctxt.ReportInconsistent); err != nil {
+	if err := visitFiles(&ctxt, filenames, ctxt.CaptureInconsistencies); err != nil {
 		log.Fatalf("report inconsistent: %v", err)
+	}
+
+	for _, warn := range ctxt.Warnings {
+		log.Printf("%s: %s", warn.pos, warn.text)
 	}
 }
 
 type context struct {
 	ops  []*operation
 	fset *token.FileSet
+
+	Warnings []warning
+}
+
+type warning struct {
+	pos  token.Position
+	text string
 }
 
 type operation struct {
@@ -122,7 +134,7 @@ func (ctxt *context) InferConventions(f *ast.File) {
 	}
 }
 
-func (ctxt *context) ReportInconsistent(f *ast.File) {
+func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 	for _, op := range ctxt.ops {
 		for _, v := range op.variants {
 			ast.Inspect(f, func(n ast.Node) bool {
@@ -133,7 +145,7 @@ func (ctxt *context) ReportInconsistent(f *ast.File) {
 					return false
 				}
 				if v.matcher.Match(n) && v != op.suggest {
-					ctxt.printWarning(n, op, v)
+					ctxt.pushWarning(n, op, v)
 				}
 				return true
 			})
@@ -141,11 +153,10 @@ func (ctxt *context) ReportInconsistent(f *ast.File) {
 	}
 }
 
-func (ctxt *context) printWarning(cause ast.Node, op *operation, bad *opVariant) {
-	// TODO(quasilyte): figure out a better message format.
+func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {
 	pos := ctxt.fset.Position(cause.Pos())
-	log.Printf("%s: %s: use %s instead of %s",
-		pos, op.name, op.suggest.name, bad.name)
+	text := fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggest.name, bad.name)
+	ctxt.Warnings = append(ctxt.Warnings, warning{pos: pos, text: text})
 }
 
 func visitFiles(ctxt *context, filenames []string, visit func(*ast.File)) error {
