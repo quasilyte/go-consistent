@@ -32,7 +32,7 @@ go-consistenct foo.go bar.go mypkg
 
 ## Overview
 
-To understand what `go-consistent` does, look at these 3 lines of code:
+To understand what `go-consistent` does, take a look at these 3 lines of code:
 
 ```go
 lit1 := map[K]V{}
