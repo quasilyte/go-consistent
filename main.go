@@ -172,7 +172,7 @@ func targetsToFilenames(targets []string) []string {
 		}
 		abs, err := filepath.Abs(target)
 		if err != nil {
-			log.Printf("skip target %q: %v", err)
+			log.Printf("skip target %q: %v", target, err)
 			continue
 		}
 		filenames = append(filenames, abs)
