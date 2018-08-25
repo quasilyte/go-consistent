@@ -28,4 +28,4 @@ go-consistenct foo.go bar.go mypkg
 `go-consistent` checks provided Go source code for consistency.
 
 * If you want to check consistency of a single file or package, just provide their name
-* If you want to check the whole project consistency, you should pass **all** its packages as an arguments
+* If you want to check the whole project, you should pass **all** its packages as an arguments
