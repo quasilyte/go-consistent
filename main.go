@@ -123,6 +123,7 @@ func (ctxt *context) SetupSuggestions() {
 }
 
 func (ctxt *context) InferConventions(f *ast.File) {
+	// TODO(quasilyte): fix code duplication with CaptureInconsistencies.
 	for _, op := range ctxt.ops {
 		for _, v := range op.variants {
 			ast.Inspect(f, func(n ast.Node) bool {
