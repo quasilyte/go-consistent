@@ -1,6 +1,6 @@
 package tests1
 
-// In this test suite, (1) option is always preffered.
+// In this test suite, (1) option is always preferred.
 
 // T is an example type.
 type T struct {
