@@ -25,6 +25,11 @@ func nilSlice() {
 	_ = []string(nil)
 }
 
+var (
+	nilSliceVar1 []string
+	nilSliceVar2 = []string(nil)
+)
+
 func emptyMap() {
 	_ = map[rune]rune{}
 	_ = map[*T]*T{}
