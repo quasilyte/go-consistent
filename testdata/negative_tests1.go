@@ -25,10 +25,8 @@ func nilSlice() {
 	var s3 []T
 }
 
-var (
-	nilSliceVar1 []string
-	nilSliceVar2 = []string(nil)
-)
+var nilSliceVar1 []string
+var nilSliceVar2 = []string(nil)
 
 func emptyMap() {
 	_ = make(map[T]T)
