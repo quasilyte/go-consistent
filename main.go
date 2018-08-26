@@ -81,6 +81,7 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		{
+			// TODO(quasilyte): rename to "nil slice decl"?
 			name: "nil slice",
 			variants: []*opVariant{
 				{name: "nil-slice-var", matcher: nilSliceVarMatcher{}},

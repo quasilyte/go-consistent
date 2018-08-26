@@ -97,11 +97,13 @@ func (nilSliceVarMatcher) Match(n ast.Node) bool {
 type nilSliceLitMatcher struct{ matcherBase }
 
 func (nilSliceLitMatcher) Match(n ast.Node) bool {
-	e, ok := n.(*ast.CallExpr)
-	if !ok {
+	assign, ok := n.(*ast.AssignStmt)
+	if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
 		return false
 	}
-	return len(e.Args) == 1 &&
+	e, ok := assign.Rhs[0].(*ast.CallExpr)
+	return ok && assign.Tok == token.DEFINE &&
+		len(e.Args) == 1 &&
 		valueOf(e.Args[0]) == "nil" &&
 		typeof.IsSlice(e.Fun)
 }

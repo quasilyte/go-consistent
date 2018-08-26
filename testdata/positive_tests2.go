@@ -24,8 +24,8 @@ func emptySlice() {
 func nilSlice() {
 	//= nil slice: use nil-slice-lit instead of nil-slice-var
 	var s1 []int
-	_ = []*T(nil)
-	_ = []string(nil)
+	s2 := []*T(nil)
+	s3 := []string(nil)
 }
 
 func emptyMap() {
