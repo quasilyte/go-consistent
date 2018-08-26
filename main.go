@@ -46,10 +46,19 @@ type warning struct {
 }
 
 type operation struct {
+	scope    opScope
 	name     string
 	suggest  *opVariant
 	variants []*opVariant
 }
+
+type opScope int
+
+const (
+	scopeAny opScope = iota
+	scopeLocal
+	scopeGlobal
+)
 
 type opVariant struct {
 	name    string
@@ -65,7 +74,8 @@ type opMatcher interface {
 func (ctxt *context) SetupOpsTable() {
 	ctxt.ops = []*operation{
 		{
-			name: "zero value pointer allocation",
+			scope: scopeAny,
+			name:  "zero value pointer allocation",
 			variants: []*opVariant{
 				{name: "new", matcher: newMatcher{}},
 				{name: "address-of-lit", matcher: addressOfLitMatcher{}},
@@ -73,7 +83,8 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		{
-			name: "empty slice",
+			scope: scopeAny,
+			name:  "empty slice",
 			variants: []*opVariant{
 				{name: "empty-slice-make", matcher: emptySliceMakeMatcher{}},
 				{name: "empty-slice-lit", matcher: emptySliceLitMatcher{}},
@@ -81,6 +92,7 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		{
+			scope: scopeLocal,
 			// TODO(quasilyte): rename to "nil slice decl"?
 			name: "nil slice",
 			variants: []*opVariant{
@@ -90,7 +102,8 @@ func (ctxt *context) SetupOpsTable() {
 		},
 
 		{
-			name: "empty map",
+			scope: scopeAny,
+			name:  "empty map",
 			variants: []*opVariant{
 				{name: "empty-map-make", matcher: emptyMapMakeMatcher{}},
 				{name: "empty-map-lit", matcher: emptyMapLitMatcher{}},
@@ -123,43 +136,69 @@ func (ctxt *context) SetupSuggestions() {
 	}
 }
 
-func (ctxt *context) InferConventions(f *ast.File) {
-	// TODO(quasilyte): fix code duplication with CaptureInconsistencies.
+type opVisitFunc func(*operation, *opVariant, ast.Node) bool
+
+func (ctxt *context) visitOps(f *ast.File, visit opVisitFunc) {
 	for _, op := range ctxt.ops {
-		for _, v := range op.variants {
-			ast.Inspect(f, func(n ast.Node) bool {
-				if n == nil {
-					return false
+		switch op.scope {
+		case scopeAny:
+			for _, v := range op.variants {
+				ast.Inspect(f, func(n ast.Node) bool {
+					return visit(op, v, n)
+				})
+			}
+
+		case scopeLocal:
+			for _, v := range op.variants {
+				for _, decl := range f.Decls {
+					decl, ok := decl.(*ast.FuncDecl)
+					if !ok {
+						continue
+					}
+					ast.Inspect(decl.Body, func(n ast.Node) bool {
+						return visit(op, v, n)
+					})
 				}
-				if v.matcher.Skip(n) {
-					return false
-				}
-				if v.matcher.Match(n) {
-					v.count++
-				}
-				return true
-			})
+			}
+
+		case scopeGlobal:
+			// TODO(quasilyte): remove later if never used.
+			panic("unimplemented and unused")
+
+		default:
+			panic(fmt.Sprintf("unexpected scope: %d", op.scope))
 		}
 	}
 }
 
-func (ctxt *context) CaptureInconsistencies(f *ast.File) {
-	for _, op := range ctxt.ops {
-		for _, v := range op.variants {
-			ast.Inspect(f, func(n ast.Node) bool {
-				if n == nil {
-					return false
-				}
-				if v.matcher.Skip(n) {
-					return false
-				}
-				if v.matcher.Match(n) && v != op.suggest {
-					ctxt.pushWarning(n, op, v)
-				}
-				return true
-			})
+func (ctxt *context) InferConventions(f *ast.File) {
+	ctxt.visitOps(f, func(op *operation, v *opVariant, n ast.Node) bool {
+		if n == nil {
+			return false
 		}
-	}
+		if v.matcher.Skip(n) {
+			return false
+		}
+		if v.matcher.Match(n) {
+			v.count++
+		}
+		return true
+	})
+}
+
+func (ctxt *context) CaptureInconsistencies(f *ast.File) {
+	ctxt.visitOps(f, func(op *operation, v *opVariant, n ast.Node) bool {
+		if n == nil {
+			return false
+		}
+		if v.matcher.Skip(n) {
+			return false
+		}
+		if v.matcher.Match(n) && v != op.suggest {
+			ctxt.pushWarning(n, op, v)
+		}
+		return true
+	})
 }
 
 func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {

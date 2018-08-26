@@ -70,13 +70,8 @@ func (emptySliceLitMatcher) Match(n ast.Node) bool {
 type nilSliceVarMatcher struct{ matcherBase }
 
 func (nilSliceVarMatcher) Match(n ast.Node) bool {
-	// TODO(quasilyte): can this be simplified with type assertion to GenDecl?
-	s, ok := n.(*ast.DeclStmt)
-	if !ok {
-		return false
-	}
-	d := s.Decl.(*ast.GenDecl)
-	if d.Tok != token.VAR {
+	d, ok := n.(*ast.GenDecl)
+	if !ok || d.Tok != token.VAR {
 		return false
 	}
 	// TODO(quasilyte): handle multi-spec var decls.
@@ -88,10 +83,7 @@ func (nilSliceVarMatcher) Match(n ast.Node) bool {
 	if len(spec.Names) != 1 {
 		return false
 	}
-	if spec.Values != nil {
-		return false
-	}
-	return typeof.IsSlice(spec.Type)
+	return spec.Values == nil && typeof.IsSlice(spec.Type)
 }
 
 type nilSliceLitMatcher struct{ matcherBase }
