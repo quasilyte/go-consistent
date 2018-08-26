@@ -30,7 +30,7 @@ func inferApproxType(x ast.Node) approxType {
 }
 
 func typeOfObject(obj *ast.Object) approxType {
-	if obj.Decl == nil {
+	if obj == nil || obj.Decl == nil {
 		return typUnknown
 	}
 	spec, ok := obj.Decl.(*ast.TypeSpec)
