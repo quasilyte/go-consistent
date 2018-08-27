@@ -25,7 +25,7 @@ func TestEnd2End(t *testing.T) {
 			}
 
 			var ctxt context
-			ctxt.SetupOpsTable()
+			ctxt.Init()
 			if err := visitFiles(&ctxt, []string{rel}, ctxt.InferConventions); err != nil {
 				log.Fatalf("infer conventions: %v", err)
 			}

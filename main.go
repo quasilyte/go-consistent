@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"log"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func main() {
 
 	filenames := targetsToFilenames(flag.Args())
 
-	ctxt.SetupOpsTable()
+	ctxt.Init()
 	if err := visitFiles(&ctxt, filenames, ctxt.InferConventions); err != nil {
 		log.Fatalf("infer conventions: %v", err)
 	}
@@ -37,8 +38,9 @@ func main() {
 }
 
 type context struct {
-	ops  []*operation
 	fset *token.FileSet
+
+	ops []*operation
 
 	Pedantic bool
 
@@ -50,11 +52,15 @@ type warning struct {
 	text string
 }
 
-type operation struct {
-	scope    opScope
-	name     string
-	suggest  *opVariant
-	variants []*opVariant
+type operationPrototype interface {
+	Variants() []opVariantPrototype
+}
+
+type opVariantPrototype struct {
+	name          string
+	skip          func(ast.Node) bool
+	match         func(ast.Node) bool
+	matchPedantic func(ast.Node) bool
 }
 
 type opScope int
@@ -65,77 +71,97 @@ const (
 	scopeGlobal
 )
 
+type operation struct {
+	name      string
+	scope     opScope
+	suggested *opVariant
+	variants  []*opVariant
+}
+
 type opVariant struct {
-	name    string
-	count   int
-	matcher opMatcher
+	name  string
+	skip  func(ast.Node) bool
+	match func(ast.Node) bool
+
+	count int
 }
 
-type opMatcher interface {
-	Skip(ast.Node) bool
-	Match(ast.Node) bool
-}
+func (ctxt *context) Init() {
+	prototypes := []operationPrototype{
+		zeroValPtrAllocProto{},
+		emptySliceProto{},
+		nilSliceDeclProto{},
+		emptyMapProto{},
+	}
 
-func (ctxt *context) SetupOpsTable() {
-	ctxt.ops = []*operation{
-		{
-			scope: scopeAny,
-			name:  "zero value pointer allocation",
-			variants: []*opVariant{
-				{name: "new", matcher: newMatcher{}},
-				{name: "address-of-lit", matcher: addressOfLitMatcher{}},
-			},
-		},
+	for _, proto := range prototypes {
+		rv := reflect.ValueOf(proto)
+		typ := rv.Type()
+		if !strings.HasSuffix(typ.Name(), "Proto") {
+			panic(fmt.Sprintf("%s: missing Proto type name suffix", typ.Name()))
+		}
+		op := &operation{
+			name: typ.Name()[:len(typ.Name())-len("Proto")],
+		}
 
-		{
-			scope: scopeAny,
-			name:  "empty slice",
-			variants: []*opVariant{
-				{name: "empty-slice-make", matcher: emptySliceMakeMatcher{}},
-				{name: "empty-slice-lit", matcher: emptySliceLitMatcher{}},
-			},
-		},
+		// Parse metadata fields, op attributes.
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			if field.Type.Name() != "opAttr" {
+				continue
+			}
 
-		{
-			scope: scopeLocal,
-			// TODO(quasilyte): rename to "nil slice decl"?
-			name: "nil slice",
-			variants: []*opVariant{
-				{name: "nil-slice-var", matcher: nilSliceVarMatcher{}},
-				{name: "nil-slice-lit", matcher: nilSliceLitMatcher{}},
-			},
-		},
+			switch field.Name {
+			case "scopeAny":
+				op.scope = scopeAny
+			case "scopeLocal":
+				op.scope = scopeLocal
+			case "scopeGlobal":
+				op.scope = scopeGlobal
+			default:
+				panic(fmt.Sprintf("%s: unexpected opAttr: %s",
+					op.name, field.Name))
+			}
+		}
 
-		{
-			scope: scopeAny,
-			name:  "empty map",
-			variants: []*opVariant{
-				{name: "empty-map-make", matcher: emptyMapMakeMatcher{}},
-				{name: "empty-map-lit", matcher: emptyMapLitMatcher{}},
-			},
-		},
+		// Instantiate op variants.
+		for _, vproto := range proto.Variants() {
+			match := vproto.match
+			if ctxt.Pedantic && vproto.matchPedantic != nil {
+				match = vproto.matchPedantic
+			}
+			skip := vproto.skip
+			if skip == nil {
+				skip = func(ast.Node) bool { return false }
+			}
+			op.variants = append(op.variants, &opVariant{
+				name:  vproto.name,
+				skip:  skip,
+				match: match,
+			})
+		}
 
-		// TODO(quasilyte): nil map
+		ctxt.ops = append(ctxt.ops, op)
 	}
 }
 
 func (ctxt *context) SetupSuggestions() {
 	for _, op := range ctxt.ops {
-		op.suggest = op.variants[0]
+		op.suggested = op.variants[0]
 		// Find the most frequently used variant.
 		for _, v := range op.variants[1:] {
-			if v.count > op.suggest.count {
-				op.suggest = v
+			if v.count > op.suggested.count {
+				op.suggested = v
 			}
 		}
 		// Diagnostic: check if there were multiple candidates.
-		if op.suggest.count == 0 {
+		if op.suggested.count == 0 {
 			continue
 		}
 		for _, v := range op.variants {
-			if v != op.suggest && v.count == op.suggest.count {
+			if op.suggested != v && v.count == op.suggested.count {
 				log.Printf("warning: %s: can't decide between %s and %s",
-					op.name, v.name, op.suggest.name)
+					op.name, v.name, op.suggested.name)
 			}
 		}
 	}
@@ -181,10 +207,10 @@ func (ctxt *context) InferConventions(f *ast.File) {
 		if n == nil {
 			return false
 		}
-		if v.matcher.Skip(n) {
+		if v.skip(n) {
 			return false
 		}
-		if v.matcher.Match(n) {
+		if v.match(n) {
 			v.count++
 		}
 		return true
@@ -196,10 +222,10 @@ func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 		if n == nil {
 			return false
 		}
-		if v.matcher.Skip(n) {
+		if v.skip(n) {
 			return false
 		}
-		if v.matcher.Match(n) && v != op.suggest {
+		if v.match(n) && v != op.suggested {
 			ctxt.pushWarning(n, op, v)
 		}
 		return true
@@ -208,7 +234,7 @@ func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 
 func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {
 	pos := ctxt.fset.Position(cause.Pos())
-	text := fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggest.name, bad.name)
+	text := fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggested.name, bad.name)
 	ctxt.Warnings = append(ctxt.Warnings, warning{pos: pos, text: text})
 }
 

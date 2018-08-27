@@ -7,15 +7,20 @@ import (
 	"github.com/Quasilyte/go-consistent/internal/typeof"
 )
 
-type matcherBase struct{}
+type opAttr struct{}
 
-func (matcherBase) Skip(ast.Node) bool {
-	return false
+type zeroValPtrAllocProto struct {
+	scopeAny opAttr
 }
 
-type newMatcher struct{ matcherBase }
+func (p zeroValPtrAllocProto) Variants() []opVariantPrototype {
+	return []opVariantPrototype{
+		{name: "new", match: p.matchNew},
+		{name: "address-of-literal", match: p.matchAddressOfLiteral},
+	}
+}
 
-func (newMatcher) Match(n ast.Node) bool {
+func (zeroValPtrAllocProto) matchNew(n ast.Node) bool {
 	e, ok := n.(*ast.CallExpr)
 	if !ok {
 		return false
@@ -24,9 +29,7 @@ func (newMatcher) Match(n ast.Node) bool {
 	return ok && fn.Name == "new"
 }
 
-type addressOfLitMatcher struct{ matcherBase }
-
-func (addressOfLitMatcher) Match(n ast.Node) bool {
+func (zeroValPtrAllocProto) matchAddressOfLiteral(n ast.Node) bool {
 	e, ok := n.(*ast.UnaryExpr)
 	if !ok {
 		return false
@@ -35,9 +38,18 @@ func (addressOfLitMatcher) Match(n ast.Node) bool {
 	return ok
 }
 
-type emptySliceMakeMatcher struct{ matcherBase }
+type emptySliceProto struct {
+	scopeAny opAttr
+}
 
-func (emptySliceMakeMatcher) Match(n ast.Node) bool {
+func (p emptySliceProto) Variants() []opVariantPrototype {
+	return []opVariantPrototype{
+		{name: "make", match: p.matchMake},
+		{name: "literal", skip: p.skipLiteral, match: p.matchLiteral},
+	}
+}
+
+func (emptySliceProto) matchMake(n ast.Node) bool {
 	e, ok := n.(*ast.CallExpr)
 	if !ok {
 		return false
@@ -51,15 +63,13 @@ func (emptySliceMakeMatcher) Match(n ast.Node) bool {
 		valueOf(e.Args[1]) == "0"
 }
 
-type emptySliceLitMatcher struct{ matcherBase }
-
-func (emptySliceLitMatcher) Skip(n ast.Node) bool {
+func (emptySliceProto) skipLiteral(n ast.Node) bool {
 	// Don't consider slice literals like &T{}.
 	e, ok := n.(*ast.UnaryExpr)
 	return ok && e.Op == token.AND
 }
 
-func (emptySliceLitMatcher) Match(n ast.Node) bool {
+func (emptySliceProto) matchLiteral(n ast.Node) bool {
 	e, ok := n.(*ast.CompositeLit)
 	if !ok {
 		return false
@@ -67,9 +77,18 @@ func (emptySliceLitMatcher) Match(n ast.Node) bool {
 	return typeof.IsSlice(e.Type) && len(e.Elts) == 0
 }
 
-type nilSliceVarMatcher struct{ matcherBase }
+type nilSliceDeclProto struct {
+	scopeLocal opAttr
+}
 
-func (nilSliceVarMatcher) Match(n ast.Node) bool {
+func (p nilSliceDeclProto) Variants() []opVariantPrototype {
+	return []opVariantPrototype{
+		{name: "var", match: p.matchVar},
+		{name: "literal", match: p.matchLiteral},
+	}
+}
+
+func (nilSliceDeclProto) matchVar(n ast.Node) bool {
 	d, ok := n.(*ast.GenDecl)
 	if !ok || d.Tok != token.VAR {
 		return false
@@ -86,9 +105,7 @@ func (nilSliceVarMatcher) Match(n ast.Node) bool {
 	return spec.Values == nil && typeof.IsSlice(spec.Type)
 }
 
-type nilSliceLitMatcher struct{ matcherBase }
-
-func (nilSliceLitMatcher) Match(n ast.Node) bool {
+func (nilSliceDeclProto) matchLiteral(n ast.Node) bool {
 	assign, ok := n.(*ast.AssignStmt)
 	if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
 		return false
@@ -100,9 +117,18 @@ func (nilSliceLitMatcher) Match(n ast.Node) bool {
 		typeof.IsSlice(e.Fun)
 }
 
-type emptyMapMakeMatcher struct{ matcherBase }
+type emptyMapProto struct {
+	scopeAny opAttr
+}
 
-func (emptyMapMakeMatcher) Match(n ast.Node) bool {
+func (p emptyMapProto) Variants() []opVariantPrototype {
+	return []opVariantPrototype{
+		{name: "make", match: p.matchMake},
+		{name: "literal", match: p.matchLiteral},
+	}
+}
+
+func (emptyMapProto) matchMake(n ast.Node) bool {
 	e, ok := n.(*ast.CallExpr)
 	if !ok {
 		return false
@@ -113,9 +139,7 @@ func (emptyMapMakeMatcher) Match(n ast.Node) bool {
 		(len(e.Args) == 1 || len(e.Args) == 2 && valueOf(e.Args[1]) == "0")
 }
 
-type emptyMapLitMatcher struct{ matcherBase }
-
-func (emptyMapLitMatcher) Match(n ast.Node) bool {
+func (emptyMapProto) matchLiteral(n ast.Node) bool {
 	e, ok := n.(*ast.CompositeLit)
 	if !ok {
 		return false
