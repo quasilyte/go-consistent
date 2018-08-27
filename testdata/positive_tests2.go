@@ -7,7 +7,7 @@ type T struct {
 	integer int
 }
 
-func zeroValuePointerAllocation() {
+func zeroValPtrAlloc() {
 	//= zeroValPtrAlloc: use address-of-literal instead of new
 	_ = new(T)
 	_ = &T{}
@@ -21,7 +21,7 @@ func emptySlice() {
 	_ = []string{}
 }
 
-func nilSlice() {
+func nilSliceDecl() {
 	//= nilSliceDecl: use literal instead of var
 	var s1 []int
 	s2 := []*T(nil)

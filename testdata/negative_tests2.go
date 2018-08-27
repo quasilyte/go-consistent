@@ -7,7 +7,7 @@ type T struct {
 	integer int
 }
 
-func zeroValuePointerAllocation() {
+func zeroValPtrAlloc() {
 	_ = &T{}
 	_ = &T{}
 	_ = &T{}
@@ -19,7 +19,7 @@ func emptySlice() {
 	_ = []string{}
 }
 
-func nilSlice() {
+func nilSliceDecl() {
 	_ = []rune(nil)
 	_ = []*T(nil)
 	_ = []string(nil)
