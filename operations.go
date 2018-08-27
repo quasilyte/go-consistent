@@ -7,16 +7,15 @@ import (
 	"github.com/Quasilyte/go-consistent/internal/typeof"
 )
 
-type opAttr struct{}
+type zeroValPtrAllocProto struct{}
 
-type zeroValPtrAllocProto struct {
-	scopeAny opAttr
-}
-
-func (p zeroValPtrAllocProto) Variants() []opVariantPrototype {
-	return []opVariantPrototype{
-		{name: "new", match: p.matchNew},
-		{name: "address-of-literal", match: p.matchAddressOfLiteral},
+func (p zeroValPtrAllocProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "new", match: p.matchNew},
+			{name: "address-of-literal", match: p.matchAddressOfLiteral},
+		},
 	}
 }
 
@@ -38,14 +37,15 @@ func (zeroValPtrAllocProto) matchAddressOfLiteral(n ast.Node) bool {
 	return ok
 }
 
-type emptySliceProto struct {
-	scopeAny opAttr
-}
+type emptySliceProto struct{}
 
-func (p emptySliceProto) Variants() []opVariantPrototype {
-	return []opVariantPrototype{
-		{name: "make", match: p.matchMake},
-		{name: "literal", skip: p.skipLiteral, match: p.matchLiteral},
+func (p emptySliceProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "make", match: p.matchMake},
+			{name: "literal", skip: p.skipLiteral, match: p.matchLiteral},
+		},
 	}
 }
 
@@ -77,14 +77,15 @@ func (emptySliceProto) matchLiteral(n ast.Node) bool {
 	return typeof.IsSlice(e.Type) && len(e.Elts) == 0
 }
 
-type nilSliceDeclProto struct {
-	scopeLocal opAttr
-}
+type nilSliceDeclProto struct{}
 
-func (p nilSliceDeclProto) Variants() []opVariantPrototype {
-	return []opVariantPrototype{
-		{name: "var", match: p.matchVar},
-		{name: "literal", match: p.matchLiteral},
+func (p nilSliceDeclProto) New() *operation {
+	return &operation{
+		scope: scopeLocal,
+		variants: []*opVariant{
+			{name: "var", match: p.matchVar},
+			{name: "literal", match: p.matchLiteral},
+		},
 	}
 }
 
@@ -117,14 +118,14 @@ func (nilSliceDeclProto) matchLiteral(n ast.Node) bool {
 		typeof.IsSlice(e.Fun)
 }
 
-type emptyMapProto struct {
-	scopeAny opAttr
-}
+type emptyMapProto struct{}
 
-func (p emptyMapProto) Variants() []opVariantPrototype {
-	return []opVariantPrototype{
-		{name: "make", match: p.matchMake},
-		{name: "literal", match: p.matchLiteral},
+func (p emptyMapProto) New() *operation {
+	return &operation{
+		variants: []*opVariant{
+			{name: "make", match: p.matchMake},
+			{name: "literal", match: p.matchLiteral},
+		},
 	}
 }
 

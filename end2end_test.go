@@ -34,7 +34,7 @@ func TestEnd2End(t *testing.T) {
 				log.Fatalf("report inconsistent: %v", err)
 			}
 
-			for _, warn := range ctxt.Warnings {
+			for _, warn := range ctxt.warnings {
 				mlist, ok := f.Matchers[warn.pos.Line]
 				if !ok {
 					t.Errorf("%s: unexpected warning: %s", warn.pos, warn.text)

@@ -17,7 +17,7 @@ func main() {
 
 	var ctxt context
 
-	flag.BoolVar(&ctxt.Pedantic, "pedantic", false,
+	flag.BoolVar(&ctxt.pedantic, "pedantic", false,
 		`makes several diagnostics more pedantic and comprehensive`)
 	flag.Parse()
 
@@ -32,7 +32,7 @@ func main() {
 		log.Fatalf("report inconsistent: %v", err)
 	}
 
-	for _, warn := range ctxt.Warnings {
+	for _, warn := range ctxt.warnings {
 		log.Printf("%s: %s", warn.pos, warn.text)
 	}
 }
@@ -42,9 +42,9 @@ type context struct {
 
 	ops []*operation
 
-	Pedantic bool
+	pedantic bool
 
-	Warnings []warning
+	warnings []warning
 }
 
 type warning struct {
@@ -53,14 +53,7 @@ type warning struct {
 }
 
 type operationPrototype interface {
-	Variants() []opVariantPrototype
-}
-
-type opVariantPrototype struct {
-	name          string
-	skip          func(ast.Node) bool
-	match         func(ast.Node) bool
-	matchPedantic func(ast.Node) bool
+	New() *operation
 }
 
 type opScope int
@@ -79,9 +72,10 @@ type operation struct {
 }
 
 type opVariant struct {
-	name  string
-	skip  func(ast.Node) bool
-	match func(ast.Node) bool
+	name          string
+	skip          func(ast.Node) bool
+	match         func(ast.Node) bool
+	matchPedantic func(ast.Node) bool
 
 	count int
 }
@@ -100,45 +94,16 @@ func (ctxt *context) Init() {
 		if !strings.HasSuffix(typ.Name(), "Proto") {
 			panic(fmt.Sprintf("%s: missing Proto type name suffix", typ.Name()))
 		}
-		op := &operation{
-			name: typ.Name()[:len(typ.Name())-len("Proto")],
-		}
+		op := proto.New()
+		op.name = typ.Name()[:len(typ.Name())-len("Proto")]
 
-		// Parse metadata fields, op attributes.
-		for i := 0; i < typ.NumField(); i++ {
-			field := typ.Field(i)
-			if field.Type.Name() != "opAttr" {
-				continue
+		for _, v := range op.variants {
+			if v.skip == nil {
+				v.skip = func(ast.Node) bool { return false }
 			}
-
-			switch field.Name {
-			case "scopeAny":
-				op.scope = scopeAny
-			case "scopeLocal":
-				op.scope = scopeLocal
-			case "scopeGlobal":
-				op.scope = scopeGlobal
-			default:
-				panic(fmt.Sprintf("%s: unexpected opAttr: %s",
-					op.name, field.Name))
+			if ctxt.pedantic && v.matchPedantic != nil {
+				v.match = v.matchPedantic
 			}
-		}
-
-		// Instantiate op variants.
-		for _, vproto := range proto.Variants() {
-			match := vproto.match
-			if ctxt.Pedantic && vproto.matchPedantic != nil {
-				match = vproto.matchPedantic
-			}
-			skip := vproto.skip
-			if skip == nil {
-				skip = func(ast.Node) bool { return false }
-			}
-			op.variants = append(op.variants, &opVariant{
-				name:  vproto.name,
-				skip:  skip,
-				match: match,
-			})
 		}
 
 		ctxt.ops = append(ctxt.ops, op)
@@ -235,7 +200,7 @@ func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {
 	pos := ctxt.fset.Position(cause.Pos())
 	text := fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggested.name, bad.name)
-	ctxt.Warnings = append(ctxt.Warnings, warning{pos: pos, text: text})
+	ctxt.warnings = append(ctxt.warnings, warning{pos: pos, text: text})
 }
 
 func visitFiles(ctxt *context, filenames []string, visit func(*ast.File)) error {
