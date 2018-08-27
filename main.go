@@ -113,6 +113,7 @@ func (ctxt *context) Init() {
 		emptySliceProto{},
 		nilSliceDeclProto{},
 		emptyMapProto{},
+		nilMapDeclProto{},
 	}
 
 	for _, proto := range prototypes {

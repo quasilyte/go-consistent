@@ -33,3 +33,12 @@ func emptyMap() {
 	_ = make(map[*T]*T)
 	_ = make(map[int]int)
 }
+
+func nilMapDecl() {
+	var m1 map[int]int
+	var m2 map[string]*T
+	var m3 map[*T]string
+}
+
+var nilMapVar1 []string
+var nilMapVar2 = []string(nil)

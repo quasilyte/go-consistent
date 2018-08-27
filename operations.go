@@ -147,3 +147,44 @@ func (emptyMapProto) matchLiteral(n ast.Node) bool {
 	}
 	return typeof.IsMap(e.Type) && len(e.Elts) == 0
 }
+
+type nilMapDeclProto struct{}
+
+func (p nilMapDeclProto) New() *operation {
+	return &operation{
+		scope: scopeLocal,
+		variants: []*opVariant{
+			{name: "var", match: p.matchVar},
+			{name: "literal", match: p.matchLiteral},
+		},
+	}
+}
+
+func (nilMapDeclProto) matchVar(n ast.Node) bool {
+	d, ok := n.(*ast.GenDecl)
+	if !ok || d.Tok != token.VAR {
+		return false
+	}
+	// TODO(quasilyte): handle multi-spec var decls.
+	if len(d.Specs) != 1 {
+		return false
+	}
+	spec := d.Specs[0].(*ast.ValueSpec)
+	// TODO(quasilyte): handle multi-name var decls.
+	if len(spec.Names) != 1 {
+		return false
+	}
+	return spec.Values == nil && typeof.IsMap(spec.Type)
+}
+
+func (nilMapDeclProto) matchLiteral(n ast.Node) bool {
+	assign, ok := n.(*ast.AssignStmt)
+	if !ok || len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
+		return false
+	}
+	e, ok := assign.Rhs[0].(*ast.CallExpr)
+	return ok && assign.Tok == token.DEFINE &&
+		len(e.Args) == 1 &&
+		valueOf(e.Args[0]) == "nil" &&
+		typeof.IsMap(e.Fun)
+}

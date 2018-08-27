@@ -34,3 +34,10 @@ func emptyMap() {
 	_ = map[*T]*T{}
 	_ = map[int]int{}
 }
+
+func nilMapDecl() {
+	//= nilMapDecl: use literal instead of var
+	var m1 map[int]int
+	m2 := map[string]*T(nil)
+	m3 := map[*T]string(nil)
+}

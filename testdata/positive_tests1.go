@@ -34,3 +34,10 @@ func emptyMap() {
 	//= emptyMap: use make instead of literal
 	_ = map[int]int{}
 }
+
+func nilMapDecl() {
+	var m1 map[int]int
+	var m2 map[string]*T
+	//= nilMapDecl: use var instead of literal
+	m3 := map[*T]string(nil)
+}
