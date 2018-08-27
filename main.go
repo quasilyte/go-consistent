@@ -103,6 +103,7 @@ type opVariant struct {
 	matchPedantic func(ast.Node) bool
 
 	// count is a counter for op variant usages.
+	// Updated during the first AST traversal.
 	count int
 }
 
