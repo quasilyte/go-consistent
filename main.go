@@ -14,11 +14,14 @@ import (
 func main() {
 	log.SetFlags(0)
 
+	var ctxt context
+
+	flag.BoolVar(&ctxt.Pedantic, "pedantic", false,
+		`makes several diagnostics more pedantic and comprehensive`)
 	flag.Parse()
 
 	filenames := targetsToFilenames(flag.Args())
 
-	var ctxt context
 	ctxt.SetupOpsTable()
 	if err := visitFiles(&ctxt, filenames, ctxt.InferConventions); err != nil {
 		log.Fatalf("infer conventions: %v", err)
@@ -36,6 +39,8 @@ func main() {
 type context struct {
 	ops  []*operation
 	fset *token.FileSet
+
+	Pedantic bool
 
 	Warnings []warning
 }
