@@ -65,18 +65,44 @@ const (
 )
 
 type operation struct {
-	name      string
-	scope     opScope
+	// name is a human-readable operation descriptor.
+	// Initialized by a context init.
+	name string
+
+	// suggested is an op variant that is inferred as the most frequently used one.
 	suggested *opVariant
-	variants  []*opVariant
+
+	// scope determines context in which operation is checked.
+	// Initialized by prototype.
+	scope opScope
+
+	// variants is a list of equivalent operation forms.
+	// Initialized by prototype.
+	variants []*opVariant
 }
 
 type opVariant struct {
-	name          string
-	skip          func(ast.Node) bool
-	match         func(ast.Node) bool
+	// name is a human-readable operation variant descriptor.
+	// Initialized by prototype.
+	name string
+
+	// skip is a function that can reject recursing into node siblings
+	// during AST traversal.
+	// Initialized by prototype.
+	// Can be nil.
+	skip func(ast.Node) bool
+
+	// match reports whether given node represents an action described by
+	// this op variant.
+	// Initialized by prototype. Can be re-assigned in context init.
+	match func(ast.Node) bool
+
+	// matchPedantic is an optional pedantic match variant.
+	// Initialized by prototype.
+	// If not nil, used instead of normal match when -pedantic=true flag is provided.
 	matchPedantic func(ast.Node) bool
 
+	// count is a counter for op variant usages.
 	count int
 }
 
@@ -98,9 +124,6 @@ func (ctxt *context) Init() {
 		op.name = typ.Name()[:len(typ.Name())-len("Proto")]
 
 		for _, v := range op.variants {
-			if v.skip == nil {
-				v.skip = func(ast.Node) bool { return false }
-			}
 			if ctxt.pedantic && v.matchPedantic != nil {
 				v.match = v.matchPedantic
 			}
@@ -172,7 +195,7 @@ func (ctxt *context) InferConventions(f *ast.File) {
 		if n == nil {
 			return false
 		}
-		if v.skip(n) {
+		if v.skip != nil && v.skip(n) {
 			return false
 		}
 		if v.match(n) {
@@ -187,7 +210,7 @@ func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 		if n == nil {
 			return false
 		}
-		if v.skip(n) {
+		if v.skip != nil && v.skip(n) {
 			return false
 		}
 		if v.match(n) && v != op.suggested {
