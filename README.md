@@ -54,3 +54,8 @@ so it suggest you to replace `m` initialization expression to use map literal in
 
 There are many similar cases where you have 2 or more options of expressing the same thing in Go,
 `go-consistent` tries to handle as much patterns as possible.
+
+### Project traits
+
+* Zero-configuration. Defaults should be good enough for most users. Other configuration is performed using command line arguments.
+* Can handle any size of projects. This means that there should be no significant memory consumption growth with the increased number of packages being checked. There can be "fast, but memory-hungry" option that can work best for small-average proejcts, but it should be always possible to check huge projects on the developer machine.
