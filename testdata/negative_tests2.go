@@ -11,6 +11,9 @@ func zeroValPtrAlloc() {
 	_ = &T{}
 	_ = &T{}
 	_ = &T{}
+
+	// Not a zero value allocation:
+	_ = &T{integer: 1}
 }
 
 func emptySlice() {
