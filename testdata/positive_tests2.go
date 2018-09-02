@@ -41,3 +41,10 @@ func nilMapDecl() {
 	m2 := map[string]*T(nil)
 	m3 := map[*T]string(nil)
 }
+
+func hexLit() {
+	//= hexLit: use A-F instead of a-f
+	_ = 0xff
+	_ = 0xABCDEF
+	_ = 0xABCD
+}

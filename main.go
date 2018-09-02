@@ -114,6 +114,7 @@ func (ctxt *context) Init() {
 		nilSliceDeclProto{},
 		emptyMapProto{},
 		nilMapDeclProto{},
+		hexLitProto{},
 	}
 
 	for _, proto := range prototypes {
@@ -261,7 +262,7 @@ func targetsToFilenames(targets []string) []string {
 	return filenames
 }
 
-func valueOf(x ast.Expr) string {
+func valueOf(x ast.Node) string {
 	switch x := x.(type) {
 	case *ast.BasicLit:
 		return x.Value

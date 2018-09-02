@@ -3,6 +3,7 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"strings"
 
 	"github.com/Quasilyte/go-consistent/internal/typeof"
 )
@@ -187,4 +188,26 @@ func (nilMapDeclProto) matchLiteral(n ast.Node) bool {
 		len(e.Args) == 1 &&
 		valueOf(e.Args[0]) == "nil" &&
 		typeof.IsMap(e.Fun)
+}
+
+type hexLitProto struct{}
+
+func (p hexLitProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "a-f", match: p.matchLowercase},
+			{name: "A-F", match: p.matchUppercase},
+		},
+	}
+}
+
+func (hexLitProto) matchLowercase(n ast.Node) bool {
+	v := valueOf(n)
+	return strings.HasPrefix(v, "0x") && strings.ContainsAny(v, "abcdef")
+}
+
+func (hexLitProto) matchUppercase(n ast.Node) bool {
+	v := valueOf(n)
+	return strings.HasPrefix(v, "0x") && strings.ContainsAny(v, "ABCDEF")
 }

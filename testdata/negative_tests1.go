@@ -42,3 +42,9 @@ func nilMapDecl() {
 
 var nilMapVar1 []string
 var nilMapVar2 = []string(nil)
+
+func hexLit() {
+	_ = 0xff
+	_ = 0xabcdef
+	_ = 0xabcd
+}
