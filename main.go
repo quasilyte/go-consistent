@@ -167,6 +167,9 @@ func (ctxt *context) visitOps(f *ast.File, visit opVisitFunc) {
 		case scopeAny:
 			for _, v := range op.variants {
 				ast.Inspect(f, func(n ast.Node) bool {
+					if n == nil {
+						return false
+					}
 					return visit(op, v, n)
 				})
 			}
@@ -175,10 +178,13 @@ func (ctxt *context) visitOps(f *ast.File, visit opVisitFunc) {
 			for _, v := range op.variants {
 				for _, decl := range f.Decls {
 					decl, ok := decl.(*ast.FuncDecl)
-					if !ok {
+					if !ok || decl.Body == nil {
 						continue
 					}
 					ast.Inspect(decl.Body, func(n ast.Node) bool {
+						if n == nil {
+							return false
+						}
 						return visit(op, v, n)
 					})
 				}
