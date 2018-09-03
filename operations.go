@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Quasilyte/go-consistent/internal/typeof"
+	"github.com/go-toolsmith/astequal"
 )
 
 type zeroValPtrAllocProto struct{}
@@ -210,4 +211,38 @@ func (hexLitProto) matchLowercase(n ast.Node) bool {
 func (hexLitProto) matchUppercase(n ast.Node) bool {
 	v := valueOf(n)
 	return strings.HasPrefix(v, "0x") && strings.ContainsAny(v, "ABCDEF")
+}
+
+type rangeCheckProto struct{}
+
+func (p rangeCheckProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "align-left", match: p.matchAlignLeft},
+			{name: "align-center", match: p.matchAlignCenter},
+		},
+	}
+}
+
+func (rangeCheckProto) matchAlignLeft(n ast.Node) bool {
+	e := asBinaryExpr(n)
+	lhs := asBinaryExpr(e.X)
+	rhs := asBinaryExpr(e.Y)
+	return !isNil(e) && !isNil(lhs) && !isNil(rhs) &&
+		(e.Op == token.LAND || e.Op == token.LOR) &&
+		(lhs.Op == token.GTR || lhs.Op == token.GEQ) &&
+		(rhs.Op == token.LSS || rhs.Op == token.LEQ) &&
+		astequal.Expr(lhs.X, rhs.X)
+}
+
+func (rangeCheckProto) matchAlignCenter(n ast.Node) bool {
+	e := asBinaryExpr(n)
+	lhs := asBinaryExpr(e.X)
+	rhs := asBinaryExpr(e.Y)
+	return !isNil(e) && !isNil(lhs) && !isNil(rhs) &&
+		(e.Op == token.LAND || e.Op == token.LOR) &&
+		(lhs.Op == token.LSS || lhs.Op == token.LEQ) &&
+		(rhs.Op == token.LSS || lhs.Op == token.LEQ) &&
+		astequal.Expr(lhs.Y, rhs.X)
 }

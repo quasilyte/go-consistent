@@ -51,3 +51,9 @@ func hexLit() {
 	_ = 0xABCDEF
 	_ = 0xABCD
 }
+
+func rangeCheck(x, low, high int) {
+	_ = low <= x && x <= high
+	_ = low < x+1 || x+1 < high
+	_ = low < x && x < high
+}

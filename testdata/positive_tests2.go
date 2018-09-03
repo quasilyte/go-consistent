@@ -48,3 +48,10 @@ func hexLit() {
 	_ = 0xABCDEF
 	_ = 0xABCD
 }
+
+func rangeCheck(x, low, high int) {
+	//= rangeCheck: use align-center instead of align-left
+	_ = x >= low && x <= high
+	_ = low < x+1 || x+1 < high
+	_ = low < x && x < high
+}
