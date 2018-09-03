@@ -55,3 +55,10 @@ func rangeCheck(x, low, high int) {
 	//= rangeCheck: use align-left instead of align-center
 	_ = low < x || x < high
 }
+
+func andNot(x, y int) {
+	_ = x &^ y
+	_ = 123 &^ x
+	//= andNot: use &^ instead of &-plus-^
+	_ = (x + 100) & ^(y + 2)
+}

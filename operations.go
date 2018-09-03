@@ -246,3 +246,27 @@ func (rangeCheckProto) matchAlignCenter(n ast.Node) bool {
 		(rhs.Op == token.LSS || lhs.Op == token.LEQ) &&
 		astequal.Expr(lhs.Y, rhs.X)
 }
+
+type andNotProto struct{}
+
+func (p andNotProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "&^", match: p.matchSingleTok},
+			{name: "&-plus-^", match: p.matchTwoTok},
+		},
+	}
+}
+
+func (andNotProto) matchSingleTok(n ast.Node) bool {
+	e, ok := n.(*ast.BinaryExpr)
+	return ok && e.Op == token.AND_NOT
+}
+
+func (andNotProto) matchTwoTok(n ast.Node) bool {
+	e := asBinaryExpr(n)
+	rhs := asUnaryExpr(e.Y)
+	return !isNil(e) && !isNil(rhs) &&
+		e.Op == token.AND && rhs.Op == token.XOR
+}

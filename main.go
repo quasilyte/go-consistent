@@ -116,6 +116,7 @@ func (ctxt *context) Init() {
 		nilMapDeclProto{},
 		hexLitProto{},
 		rangeCheckProto{},
+		andNotProto{},
 	}
 
 	for _, proto := range prototypes {
