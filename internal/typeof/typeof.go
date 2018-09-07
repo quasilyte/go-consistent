@@ -2,6 +2,10 @@ package typeof
 
 import "go/ast"
 
+func IsArray(x ast.Node) bool {
+	return inferApproxType(x) == typArray
+}
+
 func IsSlice(x ast.Node) bool {
 	return inferApproxType(x) == typSlice
 }
