@@ -62,3 +62,10 @@ func andNot(x, y int) {
 	//= andNot: use &^ instead of &-plus-^
 	_ = (x + 100) & ^(y + 2)
 }
+
+func floatLit() {
+	_ = 0.0
+	_ = 0.123
+	//= floatLit: use explicit-int/frac instead of omitted-int/frac
+	_ = 0.
+}

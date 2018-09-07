@@ -270,3 +270,43 @@ func (andNotProto) matchTwoTok(n ast.Node) bool {
 	return !isNil(e) && !isNil(rhs) &&
 		e.Op == token.AND && rhs.Op == token.XOR
 }
+
+type floatLitProto struct{}
+
+func (p floatLitProto) New() *operation {
+	return &operation{
+		scope: scopeAny,
+		variants: []*opVariant{
+			{name: "explicit-int/frac", match: p.matchExplicit},
+			{name: "omitted-int/frac", match: p.matchOmitted},
+		},
+	}
+}
+
+func (floatLitProto) splitIntFrac(n *ast.BasicLit) (integer, frac string) {
+	parts := strings.Split(n.Value, ".")
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], parts[1]
+}
+
+func (p floatLitProto) matchExplicit(n ast.Node) bool {
+	lit, ok := n.(*ast.BasicLit)
+	if !ok || lit.Kind != token.FLOAT {
+		return false
+	}
+	integer, frac := p.splitIntFrac(lit)
+	return (integer == "0" && frac != "") ||
+		(integer != "" && frac == "0")
+}
+
+func (p floatLitProto) matchOmitted(n ast.Node) bool {
+	lit, ok := n.(*ast.BasicLit)
+	if !ok || lit.Kind != token.FLOAT {
+		return false
+	}
+	integer, frac := p.splitIntFrac(lit)
+	return (frac == "" && integer != "") ||
+		(frac != "" && integer == "")
+}

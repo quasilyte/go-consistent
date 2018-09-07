@@ -117,6 +117,7 @@ func (ctxt *context) Init() {
 		hexLitProto{},
 		rangeCheckProto{},
 		andNotProto{},
+		floatLitProto{},
 	}
 
 	for _, proto := range prototypes {

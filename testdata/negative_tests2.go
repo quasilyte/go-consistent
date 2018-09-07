@@ -63,3 +63,9 @@ func andNot(x, y int) {
 	_ = 123 & ^x
 	_ = (x + 100) & ^(y + 2)
 }
+
+func floatLit() {
+	_ = .43
+	_ = 1.
+	_ = .0
+}

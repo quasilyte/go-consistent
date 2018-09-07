@@ -62,3 +62,10 @@ func andNot(x, y int) {
 	_ = 123 & ^x
 	_ = (x + 100) & ^(y + 2)
 }
+
+func floatLit() {
+	//= floatLit: use omitted-int/frac instead of explicit-int/frac
+	_ = 0.1
+	_ = 1.
+	_ = .0
+}
