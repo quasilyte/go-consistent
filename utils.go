@@ -10,6 +10,7 @@ var (
 	sentinelCallExpr   = &ast.CallExpr{}
 	sentinelIdent      = &ast.Ident{}
 	sentinelSliceExpr  = &ast.SliceExpr{}
+	sentinelGenDecl    = &ast.GenDecl{}
 )
 
 func asBinaryExpr(n ast.Node) *ast.BinaryExpr {
@@ -47,6 +48,13 @@ func asSliceExpr(n ast.Node) *ast.SliceExpr {
 	return sentinelSliceExpr
 }
 
+func asGenDecl(n ast.Node) *ast.GenDecl {
+	if decl, ok := n.(*ast.GenDecl); ok {
+		return decl
+	}
+	return sentinelGenDecl
+}
+
 func isNil(n ast.Node) bool {
 	switch n := n.(type) {
 	case *ast.BinaryExpr:
@@ -59,6 +67,8 @@ func isNil(n ast.Node) bool {
 		return n == nil || n == sentinelIdent
 	case *ast.SliceExpr:
 		return n == nil || n == sentinelSliceExpr
+	case *ast.GenDecl:
+		return n == nil || n == sentinelGenDecl
 	default:
 		return n == nil
 	}

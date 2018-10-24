@@ -12,8 +12,10 @@ func TestEnd2End(t *testing.T) {
 	filenames := []string{
 		"positive_tests1.go",
 		"positive_tests2.go",
+		"positive_tests3.go",
 		"negative_tests1.go",
 		"negative_tests2.go",
+		"negative_tests3.go",
 	}
 
 	for _, filename := range filenames {

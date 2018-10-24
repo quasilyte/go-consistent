@@ -86,6 +86,10 @@ type opVariant struct {
 	// Initialized by prototype.
 	name string
 
+	// text is a warning message to use if this variant is not used.
+	// It overrides "name" field usage.
+	text string
+
 	// skip is a function that can reject recursing into node siblings
 	// during AST traversal.
 	// Initialized by prototype.
@@ -109,6 +113,7 @@ type opVariant struct {
 
 func (ctxt *context) Init() {
 	prototypes := []operationPrototype{
+		unitImportProto{},
 		zeroValPtrAllocProto{},
 		emptySliceProto{},
 		nilSliceDeclProto{},
@@ -118,6 +123,7 @@ func (ctxt *context) Init() {
 		rangeCheckProto{},
 		andNotProto{},
 		floatLitProto{},
+		labelCaseProto{},
 	}
 
 	for _, proto := range prototypes {
@@ -193,8 +199,11 @@ func (ctxt *context) visitOps(f *ast.File, visit opVisitFunc) {
 			}
 
 		case scopeGlobal:
-			// TODO(quasilyte): remove later if never used.
-			panic("unimplemented and unused")
+			for _, v := range op.variants {
+				for _, decl := range f.Decls {
+					visit(op, v, decl)
+				}
+			}
 
 		default:
 			panic(fmt.Sprintf("unexpected scope: %d", op.scope))
@@ -234,7 +243,12 @@ func (ctxt *context) CaptureInconsistencies(f *ast.File) {
 
 func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {
 	pos := ctxt.fset.Position(cause.Pos())
-	text := fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggested.name, bad.name)
+	var text string
+	if op.suggested.text != "" {
+		text = fmt.Sprintf("%s: %s", op.name, op.suggested.text)
+	} else {
+		text = fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggested.name, bad.name)
+	}
 	ctxt.warnings = append(ctxt.warnings, warning{pos: pos, text: text})
 }
 

@@ -2,6 +2,21 @@ package tests1
 
 // In this test suite, (1) option is always preferred.
 
+import "strconv"
+
+import "errors"
+
+//= unitImport: omit parenthesis in single-package import
+import (
+	"fmt"
+)
+
+var (
+	_ = fmt.Printf
+	_ = errors.New
+	_ = strconv.Atoi
+)
+
 // T is an example type.
 type T struct {
 	integer int
@@ -68,4 +83,13 @@ func floatLit() {
 	_ = 0.123
 	//= floatLit: use explicit-int/frac instead of omitted-int/frac
 	_ = 0.
+}
+
+func labelCase() {
+ALL_UPPER:
+FOO:
+	//= labelCase: use ALL_UPPER instead of UpperCamelCase
+UpperCamelCase:
+	//= labelCase: use ALL_UPPER instead of lowerCamelCase
+lowerCamelCase:
 }

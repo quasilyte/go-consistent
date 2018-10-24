@@ -3,11 +3,36 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"regexp"
 	"strings"
 
 	"github.com/Quasilyte/go-consistent/internal/typeof"
 	"github.com/go-toolsmith/astequal"
 )
+
+type unitImportProto struct{}
+
+func (p unitImportProto) New() *operation {
+	return &operation{
+		scope: scopeGlobal,
+		variants: []*opVariant{
+			{text: "omit parenthesis in single-package import", match: p.matchNoParens},
+			{text: "wrap single-package import spec into parenthesis", match: p.matchWithParens},
+		},
+	}
+}
+
+func (p unitImportProto) matchNoParens(n ast.Node) bool {
+	decl := asGenDecl(n)
+	return decl.Tok == token.IMPORT && len(decl.Specs) == 1 &&
+		decl.Lparen == 0 && decl.Rparen == 0
+}
+
+func (p unitImportProto) matchWithParens(n ast.Node) bool {
+	decl := asGenDecl(n)
+	return decl.Tok == token.IMPORT && len(decl.Specs) == 1 &&
+		decl.Lparen != 0 && decl.Rparen != 0
+}
 
 type zeroValPtrAllocProto struct{}
 
@@ -309,4 +334,30 @@ func (p floatLitProto) matchOmitted(n ast.Node) bool {
 	integer, frac := p.splitIntFrac(lit)
 	return (frac == "" && integer != "") ||
 		(frac != "" && integer == "")
+}
+
+type labelCaseProto struct {
+	allUpperCase   *regexp.Regexp
+	upperCamelCase *regexp.Regexp
+	lowerCamelCase *regexp.Regexp
+}
+
+func (p labelCaseProto) New() *operation {
+	allUpperCase := regexp.MustCompile(`^[A-Z][A-Z_]`)
+	upperCamelCase := regexp.MustCompile(`^[A-Z][a-z]`)
+	lowerCamelCase := regexp.MustCompile(`^[a-z]`)
+	match := func(rx *regexp.Regexp) func(n ast.Node) bool {
+		return func(n ast.Node) bool {
+			stmt, ok := n.(*ast.LabeledStmt)
+			return ok && rx.MatchString(stmt.Label.Name)
+		}
+	}
+	return &operation{
+		scope: scopeLocal,
+		variants: []*opVariant{
+			{name: "ALL_UPPER", match: match(allUpperCase)},
+			{name: "UpperCamelCase", match: match(upperCamelCase)},
+			{name: "lowerCamelCase", match: match(lowerCamelCase)},
+		},
+	}
 }

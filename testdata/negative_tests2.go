@@ -2,6 +2,24 @@ package ntests2
 
 // In this test suite, (2) option is always used. No warnings should be generated.
 
+import (
+	"strconv"
+)
+
+import (
+	"errors"
+)
+
+import (
+	"fmt"
+)
+
+var (
+	_ = fmt.Printf
+	_ = errors.New
+	_ = strconv.Atoi
+)
+
 // T is an example type.
 type T struct {
 	integer int
@@ -68,4 +86,11 @@ func floatLit() {
 	_ = .43
 	_ = 1.
 	_ = .0
+}
+
+func labelCase() {
+AllUpper:
+Foo:
+UpperCamelCase:
+LowerCamelCase:
 }

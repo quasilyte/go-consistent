@@ -2,6 +2,23 @@ package tests2
 
 // In this test suite, (2) option is always preferred.
 
+//= unitImport: wrap single-package import spec into parenthesis
+import "strconv"
+
+import (
+	"errors"
+)
+
+import (
+	"fmt"
+)
+
+var (
+	_ = fmt.Printf
+	_ = errors.New
+	_ = strconv.Atoi
+)
+
 // T is an example type.
 type T struct {
 	integer int
@@ -68,4 +85,13 @@ func floatLit() {
 	_ = 0.1
 	_ = 1.
 	_ = .0
+}
+
+func labelCase() {
+	//= labelCase: use UpperCamelCase instead of ALL_UPPER
+ALL_UPPER:
+Foo:
+UpperCamelCase:
+	//= labelCase: use UpperCamelCase instead of lowerCamelCase
+lowerCamelCase:
 }
