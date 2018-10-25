@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"go/token"
 	"path"
 	"testing"
 
@@ -27,29 +27,29 @@ func TestEnd2End(t *testing.T) {
 			}
 
 			var ctxt context
-			ctxt.Init()
-			if err := visitFiles(&ctxt, []string{rel}, ctxt.InferConventions); err != nil {
-				log.Fatalf("infer conventions: %v", err)
+			ctxt.paths = []string{rel}
+			ctxt.initCheckers()
+			if err := ctxt.collectAllCandidates(); err != nil {
+				t.Fatalf("collect candidates: %v", err)
 			}
-			ctxt.SetupSuggestions()
-			if err := visitFiles(&ctxt, []string{rel}, ctxt.CaptureInconsistencies); err != nil {
-				log.Fatalf("report inconsistent: %v", err)
-			}
-
-			for _, warn := range ctxt.warnings {
-				mlist, ok := f.Matchers[warn.pos.Line]
+			ctxt.assignSuggestions()
+			visitWarings(&ctxt, func(pos token.Position, v *opVariant) {
+				text := v.op.name + ": " + v.op.suggested.warning
+				mlist, ok := f.Matchers[pos.Line]
 				if !ok {
-					t.Errorf("%s: unexpected warning: %s", warn.pos, warn.text)
-					continue
+					t.Errorf("%s: unexpected warning: %s", pos, text)
+					return
 				}
 
 				for _, m := range mlist {
-					if m.Match(warn.text) {
+					if m.Match(text) {
 						m.Matches++
 						break
+					} else {
+						t.Errorf("%s: unexpected warning: %s", m.Position(), text)
 					}
 				}
-			}
+			})
 
 			for _, mlist := range f.Matchers {
 				for _, m := range mlist {

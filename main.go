@@ -4,294 +4,233 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/token"
+	"go/types"
 	"log"
-	"path/filepath"
-	"reflect"
-	"strings"
+	"regexp"
+
+	"github.com/go-toolsmith/astinfo"
+	"github.com/kisielk/gotool"
+	"golang.org/x/tools/go/packages"
 )
 
 func main() {
 	log.SetFlags(0)
-
 	var ctxt context
 
-	flag.BoolVar(&ctxt.pedantic, "pedantic", false,
-		`makes several diagnostics more pedantic and comprehensive`)
-	flag.Parse()
-
-	filenames := targetsToFilenames(flag.Args())
-
-	ctxt.Init()
-	if err := visitFiles(&ctxt, filenames, ctxt.InferConventions); err != nil {
-		log.Fatalf("infer conventions: %v", err)
-	}
-	ctxt.SetupSuggestions()
-	if err := visitFiles(&ctxt, filenames, ctxt.CaptureInconsistencies); err != nil {
-		log.Fatalf("report inconsistent: %v", err)
+	steps := []struct {
+		name string
+		fn   func() error
+	}{
+		{"parse flags", ctxt.parseFlags},
+		{"resolve targets", ctxt.resolveTargets},
+		{"init checkers", ctxt.initCheckers},
+		{"collect candidates", ctxt.collectAllCandidates},
+		{"assign suggestions", ctxt.assignSuggestions},
+		{"print warnings", ctxt.printWarnings},
 	}
 
-	for _, warn := range ctxt.warnings {
-		log.Printf("%s: %s", warn.pos, warn.text)
+	for _, step := range steps {
+		if err := step.fn(); err != nil {
+			log.Fatalf("%s: %v", step.name, err)
+		}
 	}
 }
 
 type context struct {
-	fset *token.FileSet
-
-	ops []*operation
-
-	pedantic bool
-
-	warnings []warning
-}
-
-type warning struct {
-	pos  token.Position
-	text string
-}
-
-type operationPrototype interface {
-	New() *operation
-}
-
-type opScope int
-
-const (
-	scopeAny opScope = iota
-	scopeLocal
-	scopeGlobal
-)
-
-type operation struct {
-	// name is a human-readable operation descriptor.
-	// Initialized by a context init.
-	name string
-
-	// suggested is an op variant that is inferred as the most frequently used one.
-	suggested *opVariant
-
-	// scope determines context in which operation is checked.
-	// Initialized by prototype.
-	scope opScope
-
-	// variants is a list of equivalent operation forms.
-	// Initialized by prototype.
-	variants []*opVariant
-}
-
-type opVariant struct {
-	// name is a human-readable operation variant descriptor.
-	// Initialized by prototype.
-	name string
-
-	// text is a warning message to use if this variant is not used.
-	// It overrides "name" field usage.
-	text string
-
-	// skip is a function that can reject recursing into node siblings
-	// during AST traversal.
-	// Initialized by prototype.
-	// Can be nil.
-	skip func(ast.Node) bool
-
-	// match reports whether given node represents an action described by
-	// this op variant.
-	// Initialized by prototype. Can be re-assigned in context init.
-	match func(ast.Node) bool
-
-	// matchPedantic is an optional pedantic match variant.
-	// Initialized by prototype.
-	// If not nil, used instead of normal match when -pedantic=true flag is provided.
-	matchPedantic func(ast.Node) bool
-
-	// count is a counter for op variant usages.
-	// Updated during the first AST traversal.
-	count int
-}
-
-func (ctxt *context) Init() {
-	prototypes := []operationPrototype{
-		unitImportProto{},
-		zeroValPtrAllocProto{},
-		emptySliceProto{},
-		nilSliceDeclProto{},
-		emptyMapProto{},
-		nilMapDeclProto{},
-		hexLitProto{},
-		rangeCheckProto{},
-		andNotProto{},
-		floatLitProto{},
-		labelCaseProto{},
+	// flags is an (effectively) immutable struct that holds all command-line
+	// arguments as they were passed to the program.
+	//
+	// For per-argument documentation see context.parseFlags.
+	flags struct {
+		pedantic bool
+		verbose  bool
+		targets  []string
+		exclude  string
 	}
 
-	for _, proto := range prototypes {
-		rv := reflect.ValueOf(proto)
-		typ := rv.Type()
-		if !strings.HasSuffix(typ.Name(), "Proto") {
-			panic(fmt.Sprintf("%s: missing Proto type name suffix", typ.Name()))
-		}
-		op := proto.New()
-		op.name = typ.Name()[:len(typ.Name())-len("Proto")]
+	paths []string
 
-		for _, v := range op.variants {
-			if ctxt.pedantic && v.matchPedantic != nil {
-				v.match = v.matchPedantic
+	locs *locationMap
+
+	fset    *token.FileSet
+	info    *types.Info
+	astinfo astinfo.Info
+
+	checkers []checker
+
+	candidates []candidate
+}
+
+func (ctxt *context) parseFlags() error {
+	flag.BoolVar(&ctxt.flags.pedantic, "pedantic", false,
+		`makes several diagnostics more pedantic and comprehensive`)
+	flag.BoolVar(&ctxt.flags.verbose, "v", false,
+		`print information that is useful for debugging`)
+	flag.StringVar(&ctxt.flags.exclude, "exclude", `^unsafe$|^builtin$`,
+		`import path excluding regexp`)
+
+	flag.Parse()
+
+	ctxt.flags.targets = flag.Args()
+	if len(ctxt.flags.targets) == 0 {
+		return fmt.Errorf("not enough positional args (empty targets list)")
+	}
+
+	return nil
+}
+
+func (ctxt *context) resolveTargets() error {
+	ctxt.paths = gotool.ImportPaths(ctxt.flags.targets)
+	if len(ctxt.paths) == 0 {
+		return fmt.Errorf("targets resolved to an empty import paths list")
+	}
+
+	// Filter-out packages using the exclude pattern.
+	excludeRE, err := regexp.Compile(ctxt.flags.exclude)
+	if err != nil {
+		return fmt.Errorf("compiling -exclude regexp: %v", err)
+	}
+	paths := ctxt.paths[:0]
+	for _, path := range ctxt.paths {
+		if !excludeRE.MatchString(path) {
+			paths = append(paths, path)
+		}
+	}
+	ctxt.paths = paths
+
+	if ctxt.flags.verbose && len(paths) == 0 {
+		log.Printf("\tdebug: import paths list is empty after filtering")
+	}
+
+	return nil
+}
+
+func (ctxt *context) initCheckers() error {
+	checkers := []checker{
+		newUnitImportChecker(ctxt),
+		newZeroValPtrAllocChecker(ctxt),
+		newEmptySliceChecker(ctxt),
+		newEmptyMapChecker(ctxt),
+		newHexLitChecker(ctxt),
+		newRangeCheckChecker(ctxt),
+		newAndNotChecker(ctxt),
+		newFloatLitChecker(ctxt),
+		newLabelCaseChecker(ctxt),
+	}
+
+	variantID := 0
+	for _, c := range checkers {
+		op := c.Operation()
+		if op.name == "" {
+			panic(fmt.Sprintf("%T: empty operation name", c))
+		}
+		for i, v := range op.variants {
+			if v.warning == "" {
+				panic(fmt.Sprintf("%T: empty warning for variant#%d", c, i))
 			}
+			v.op = op
+			v.id = variantID
+			variantID++
 		}
+	}
 
-		ctxt.ops = append(ctxt.ops, op)
+	ctxt.locs = newLocationMap()
+	ctxt.checkers = checkers
+
+	return nil
+}
+
+func (ctxt *context) collectAllCandidates() error {
+	for _, path := range ctxt.paths {
+		if err := ctxt.collectCandidates(path); err != nil {
+			return fmt.Errorf("%s: %v", path, err)
+		}
+	}
+	return nil
+}
+
+func (ctxt *context) collectCandidates(path string) error {
+	ctxt.fset = token.NewFileSet()
+
+	// TODO(Quasilyte): load with tests.
+	conf := &packages.Config{
+		Mode: packages.LoadSyntax,
+		Fset: ctxt.fset,
+	}
+
+	// TODO(Quasilyte): current approach is memory-efficient
+	// and does scale well with huge amounts of targets to check,
+	// but it's not very fast. Might want to optimize it a little bit.
+	pkgs, err := packages.Load(conf, path)
+	if err != nil {
+		return err
+	}
+	for _, pkg := range pkgs {
+		ctxt.info = pkg.TypesInfo
+		for _, f := range pkg.Syntax {
+			ctxt.collectFileCandidates(f)
+		}
+	}
+
+	return nil
+}
+
+func (ctxt *context) collectFileCandidates(f *ast.File) {
+	ctxt.astinfo = astinfo.Info{
+		Parents: make(map[ast.Node]ast.Node),
+	}
+	ctxt.astinfo.Origin = f
+	ctxt.astinfo.Resolve()
+
+	for _, c := range ctxt.checkers {
+		for _, decl := range f.Decls {
+			ast.Inspect(decl, func(n ast.Node) bool {
+				return c.Visit(n)
+			})
+		}
 	}
 }
 
-func (ctxt *context) SetupSuggestions() {
-	for _, op := range ctxt.ops {
+func (ctxt *context) assignSuggestions() error {
+	for _, c := range ctxt.checkers {
+		op := c.Operation()
 		op.suggested = op.variants[0]
-		// Find the most frequently used variant.
 		for _, v := range op.variants[1:] {
 			if v.count > op.suggested.count {
 				op.suggested = v
 			}
 		}
-		// Diagnostic: check if there were multiple candidates.
-		if op.suggested.count == 0 {
-			continue
-		}
-		for _, v := range op.variants {
-			if op.suggested != v && v.count == op.suggested.count {
-				log.Printf("warning: %s: can't decide between %s and %s",
-					op.name, v.name, op.suggested.name)
-			}
-		}
-	}
-}
-
-type opVisitFunc func(*operation, *opVariant, ast.Node) bool
-
-func (ctxt *context) visitOps(f *ast.File, visit opVisitFunc) {
-	for _, op := range ctxt.ops {
-		switch op.scope {
-		case scopeAny:
-			for _, v := range op.variants {
-				ast.Inspect(f, func(n ast.Node) bool {
-					if n == nil {
-						return false
-					}
-					return visit(op, v, n)
-				})
-			}
-
-		case scopeLocal:
-			for _, v := range op.variants {
-				for _, decl := range f.Decls {
-					decl, ok := decl.(*ast.FuncDecl)
-					if !ok || decl.Body == nil {
-						continue
-					}
-					ast.Inspect(decl.Body, func(n ast.Node) bool {
-						if n == nil {
-							return false
-						}
-						return visit(op, v, n)
-					})
-				}
-			}
-
-		case scopeGlobal:
-			for _, v := range op.variants {
-				for _, decl := range f.Decls {
-					visit(op, v, decl)
-				}
-			}
-
-		default:
-			panic(fmt.Sprintf("unexpected scope: %d", op.scope))
-		}
-	}
-}
-
-func (ctxt *context) InferConventions(f *ast.File) {
-	ctxt.visitOps(f, func(op *operation, v *opVariant, n ast.Node) bool {
-		if n == nil {
-			return false
-		}
-		if v.skip != nil && v.skip(n) {
-			return false
-		}
-		if v.match(n) {
-			v.count++
-		}
-		return true
-	})
-}
-
-func (ctxt *context) CaptureInconsistencies(f *ast.File) {
-	ctxt.visitOps(f, func(op *operation, v *opVariant, n ast.Node) bool {
-		if n == nil {
-			return false
-		}
-		if v.skip != nil && v.skip(n) {
-			return false
-		}
-		if v.match(n) && v != op.suggested {
-			ctxt.pushWarning(n, op, v)
-		}
-		return true
-	})
-}
-
-func (ctxt *context) pushWarning(cause ast.Node, op *operation, bad *opVariant) {
-	pos := ctxt.fset.Position(cause.Pos())
-	var text string
-	if op.suggested.text != "" {
-		text = fmt.Sprintf("%s: %s", op.name, op.suggested.text)
-	} else {
-		text = fmt.Sprintf("%s: use %s instead of %s", op.name, op.suggested.name, bad.name)
-	}
-	ctxt.warnings = append(ctxt.warnings, warning{pos: pos, text: text})
-}
-
-func visitFiles(ctxt *context, filenames []string, visit func(*ast.File)) error {
-	fset := token.NewFileSet()
-	ctxt.fset = fset
-	for _, filename := range filenames {
-		f, err := parser.ParseFile(fset, filename, nil, 0)
-		if err != nil {
-			return err
-		}
-		visit(f)
 	}
 	return nil
 }
 
-func targetsToFilenames(targets []string) []string {
-	var filenames []string
-
-	for _, target := range targets {
-		if !strings.HasSuffix(target, ".go") {
-			// TODO(quasilyte): add package targets support.
-			log.Printf("skip target %q: not a Go file", target)
-			continue
-		}
-		abs, err := filepath.Abs(target)
-		if err != nil {
-			log.Printf("skip target %q: %v", target, err)
-			continue
-		}
-		filenames = append(filenames, abs)
-	}
-
-	return filenames
+func (ctxt *context) printWarnings() error {
+	visitWarings(ctxt, func(pos token.Position, v *opVariant) {
+		fmt.Printf("%s: %s: %s\n", pos, v.op.name, v.op.suggested.warning)
+	})
+	return nil
 }
 
-func valueOf(x ast.Node) string {
-	switch x := x.(type) {
-	case *ast.BasicLit:
-		return x.Value
-	case *ast.Ident:
-		return x.Name
-	default:
-		return ""
+func visitWarings(ctxt *context, visit func(pos token.Position, v *opVariant)) {
+	// Build variant map which is accessed by variantID.
+	vcount := 0
+	for _, c := range ctxt.checkers {
+		vcount += len(c.Operation().variants)
+	}
+	variants := make([]*opVariant, vcount)
+	for _, c := range ctxt.checkers {
+		for _, v := range c.Operation().variants {
+			variants[v.id] = v
+		}
+	}
+
+	for _, c := range ctxt.candidates {
+		v := variants[c.variantID]
+		if v.op.suggested == v {
+			continue // OK, everything is consistent
+		}
+		pos := ctxt.locs.Get(c.locationID)
+		visit(pos, v)
 	}
 }

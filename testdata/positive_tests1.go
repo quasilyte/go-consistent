@@ -6,7 +6,7 @@ import "strconv"
 
 import "errors"
 
-//= unitImport: omit parenthesis in single-package import
+//= unit import: omit parenthesis in a single-package import
 import (
 	"fmt"
 )
@@ -24,72 +24,65 @@ type T struct {
 
 func zeroValPtrAlloc() {
 	_ = new(T)
-	_ = new(T)
-	//= zeroValPtrAlloc: use new instead of address-of-literal
+	_ = new(map[string]bool)
+	_ = new([]int)
+	//= zero value ptr alloc: use new(T) for *T allocation
 	_ = &T{}
+	//= zero value ptr alloc: use new(T) for *T allocation
+	_ = &[]int{}
 }
 
 func emptySlice() {
 	_ = make([]int, 0)
 	_ = make([]float64, 0)
-	//= emptySlice: use make instead of literal
+	//= empty slice: use make([]T, 0)
 	_ = []string{}
-}
-
-func nilSliceDecl() {
-	var s1 []int
-	var s2 []*T
-	//= nilSliceDecl: use var instead of literal
-	s3 := []string(nil)
 }
 
 func emptyMap() {
 	_ = make(map[T]T)
-	_ = make(map[*T]*T)
-	//= emptyMap: use make instead of literal
+	_ = make(map[*T]*T, 0)
+	//= empty map: use make(map[K]V)
 	_ = map[int]int{}
-}
-
-func nilMapDecl() {
-	var m1 map[int]int
-	var m2 map[string]*T
-	//= nilMapDecl: use var instead of literal
-	m3 := map[*T]string(nil)
 }
 
 func hexLit() {
 	_ = 0xff
 	_ = 0xabcdef
-	//= hexLit: use a-f instead of A-F
+	//= hex lit: use a-f (lower case) digits
 	_ = 0xABCD
 }
 
 func rangeCheck(x, low, high int) {
 	_ = x > low && x <= high
 	_ = x+1 >= low && x+1 < high
-	//= rangeCheck: use align-left instead of align-center
+	_ = x >= low && x <= high
+	//= range check: use align-left, like in `x >= low && x <= high`
 	_ = low < x || x < high
 }
 
 func andNot(x, y int) {
 	_ = x &^ y
 	_ = 123 &^ x
-	//= andNot: use &^ instead of &-plus-^
+	//= and-not: remove a space between & and ^, like in `x &^ y`
 	_ = (x + 100) & ^(y + 2)
 }
 
 func floatLit() {
 	_ = 0.0
 	_ = 0.123
-	//= floatLit: use explicit-int/frac instead of omitted-int/frac
+	_ = 1.0
+	//= float lit: use explicit int/frac part, like in `1.0` and `0.1`
 	_ = 0.
+	//= float lit: use explicit int/frac part, like in `1.0` and `0.1`
+	_ = .0
 }
 
 func labelCase() {
 ALL_UPPER:
 FOO:
-	//= labelCase: use ALL_UPPER instead of UpperCamelCase
+	//= label case: use ALL_UPPER
 UpperCamelCase:
-	//= labelCase: use ALL_UPPER instead of lowerCamelCase
+	//= label case: use ALL_UPPER
 lowerCamelCase:
 }

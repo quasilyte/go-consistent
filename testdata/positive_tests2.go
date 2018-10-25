@@ -2,7 +2,7 @@ package tests2
 
 // In this test suite, (2) option is always preferred.
 
-//= unitImport: wrap single-package import spec into parenthesis
+//= unit import: wrap single-package import spec into parenthesis
 import "strconv"
 
 import (
@@ -25,73 +25,66 @@ type T struct {
 }
 
 func zeroValPtrAlloc() {
-	//= zeroValPtrAlloc: use address-of-literal instead of new
+	//= zero value ptr alloc: use &T{} for *T allocation
 	_ = new(T)
+	//= zero value ptr alloc: use &T{} for *T allocation
+	_ = new(map[string]bool)
 	_ = &T{}
-	_ = &T{}
+	_ = &map[string]bool{}
+	_ = &[]int{}
 }
 
 func emptySlice() {
-	//= emptySlice: use literal instead of make
+	//= empty slice: use []T{}
 	_ = make([]int, 0)
 	_ = []float64{}
 	_ = []string{}
 }
 
-func nilSliceDecl() {
-	//= nilSliceDecl: use literal instead of var
-	var s1 []int
-	s2 := []*T(nil)
-	s3 := []string(nil)
-}
-
 func emptyMap() {
-	//= emptyMap: use literal instead of make
+	//= empty map: use map[K]V{}
 	_ = make(map[T]T)
 	_ = map[*T]*T{}
 	_ = map[int]int{}
 }
 
-func nilMapDecl() {
-	//= nilMapDecl: use literal instead of var
-	var m1 map[int]int
-	m2 := map[string]*T(nil)
-	m3 := map[*T]string(nil)
-}
-
 func hexLit() {
-	//= hexLit: use A-F instead of a-f
+	//= hex lit: use A-F (upper case) digits
 	_ = 0xff
 	_ = 0xABCDEF
 	_ = 0xABCD
 }
 
 func rangeCheck(x, low, high int) {
-	//= rangeCheck: use align-center instead of align-left
-	_ = x >= low && x <= high
-	_ = low < x+1 || x+1 < high
-	_ = low < x && x < high
+	//= range check: use align-center, like in `low < x && x < high`
+	_ = x > low && x <= high
+	_ = low <= x+1 || x+1 <= high
+	_ = low <= x || x < high
+	_ = low < x || x < high
 }
 
 func andNot(x, y int) {
-	//= andNot: use &-plus-^ instead of &^
+	//= and-not: put a space between & and ^, like in `x & ^y`
 	_ = x &^ y
 	_ = 123 & ^x
 	_ = (x + 100) & ^(y + 2)
 }
 
 func floatLit() {
-	//= floatLit: use omitted-int/frac instead of explicit-int/frac
-	_ = 0.1
-	_ = 1.
+	//= float lit: use implicit int/frac part, like in `1.` and `.1`
+	_ = 1.0
+	//= float lit: use implicit int/frac part, like in `1.` and `.1`
+	_ = 0.123
+	_ = 11.
+	_ = 0.
 	_ = .0
 }
 
 func labelCase() {
-	//= labelCase: use UpperCamelCase instead of ALL_UPPER
+	//= label case: use UpperCamelCase
 ALL_UPPER:
 Foo:
 UpperCamelCase:
-	//= labelCase: use UpperCamelCase instead of lowerCamelCase
+	//= label case: use UpperCamelCase
 lowerCamelCase:
 }
