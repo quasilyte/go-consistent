@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"os"
 	"regexp"
 
 	"github.com/go-toolsmith/astinfo"
@@ -210,9 +211,12 @@ func (ctxt *context) assignSuggestions() error {
 }
 
 func (ctxt *context) printWarnings() error {
+	exitCode := 0
 	visitWarings(ctxt, func(pos token.Position, v *opVariant) {
+		exitCode = 1
 		fmt.Printf("%s: %s: %s\n", pos, v.op.name, v.op.suggested.warning)
 	})
+	os.Exit(exitCode)
 	return nil
 }
 
