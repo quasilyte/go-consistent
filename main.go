@@ -158,10 +158,10 @@ func (ctxt *context) collectAllCandidates() error {
 func (ctxt *context) collectCandidates(path string) error {
 	ctxt.fset = token.NewFileSet()
 
-	// TODO(Quasilyte): load with tests.
 	conf := &packages.Config{
-		Mode: packages.LoadSyntax,
-		Fset: ctxt.fset,
+		Mode:  packages.LoadSyntax,
+		Fset:  ctxt.fset,
+		Tests: true,
 	}
 
 	// TODO(Quasilyte): current approach is memory-efficient
@@ -172,6 +172,25 @@ func (ctxt *context) collectCandidates(path string) error {
 		return err
 	}
 	for _, pkg := range pkgs {
+		// For a single import path, go/package can produce
+		// up to (?) four packages:
+		//	# ID                        name         path
+		//	1 $path                     $path        $path
+		//	2 $path [$path.test]        $path        $path
+		//	3 ${path}_test [$path.test] ${path}_test ${path}_test
+		//	4 $path.test                main         $path.test
+		//
+		// We only need $path (1) and ${path}_test (3).
+
+		// Get rid of (2).
+		if path == pkg.PkgPath && pkg.ID != path {
+			continue
+		}
+		// Get rid of (4).
+		if path != "main" && pkg.Name == "main" {
+			continue
+		}
+
 		ctxt.info = pkg.TypesInfo
 		for _, f := range pkg.Syntax {
 			ctxt.collectFileCandidates(f)
