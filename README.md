@@ -62,3 +62,104 @@ There are many similar cases where you have 2 or more options of expressing the 
   memory consumption growth with the increased number of packages being checked.
   There can be "fast, but memory-hungry" option that can work best for small-average projects,
   but it should be always possible to check huge projects on the developer machine.
+
+### Complete list of checks performed
+
+#### unit import
+
+```go
+// A: no parenthesis
+import "fmt"
+
+// B: with parenthesis
+import (
+	"fmt"
+)
+```
+
+#### zero val ptr alloc
+
+```go
+// A: new call
+new(T)
+new([]T)
+
+// B: address of literal
+&T{}
+&[]T{}
+```
+
+#### empty slice
+
+```go
+// A: make call
+make([]T, 0)
+
+// B: slice literal
+[]T{}
+```
+
+#### empty map
+
+```go
+// A: make call
+make(map[K]V)
+
+// B: map literal
+map[K]V{}
+```
+
+#### hex lit
+
+```go
+// A: lower case a-f digits
+0xff
+
+// B: upper case A-F digits
+0xFF
+```
+
+#### range check
+
+```go
+// A: center-aligned
+x > low && x < high
+
+// B: left-aligned
+low < x && x < high
+```
+
+#### and-not
+
+```go
+// A: using &^ operator (no space)
+x &^ y
+
+// B: using & and ^ (with space)
+x & ^y
+```
+
+#### float lit
+
+```go
+// A: explicit int/frac parts
+0.0
+1.0
+
+// B: implicit int/frac parts
+.0
+1.
+```
+
+#### label case
+
+```go
+// A: all upper case
+LABEL_NAME:
+
+// B: upper camel case
+LabelName:
+
+// C: lower camel case
+labelName:
+```
