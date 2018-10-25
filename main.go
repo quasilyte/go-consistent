@@ -144,6 +144,9 @@ func (ctxt *context) initCheckers() error {
 
 func (ctxt *context) collectAllCandidates() error {
 	for _, path := range ctxt.paths {
+		if ctxt.flags.verbose {
+			log.Printf("\tdebug: check %s", path)
+		}
 		if err := ctxt.collectCandidates(path); err != nil {
 			return fmt.Errorf("%s: %v", path, err)
 		}
