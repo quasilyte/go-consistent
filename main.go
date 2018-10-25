@@ -117,6 +117,7 @@ func (ctxt *context) initCheckers() error {
 		newAndNotChecker(ctxt),
 		newFloatLitChecker(ctxt),
 		newLabelCaseChecker(ctxt),
+		newUntypedConstCoerceChecker(ctxt),
 	}
 
 	variantID := 0

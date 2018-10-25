@@ -88,3 +88,12 @@ UpperCamelCase:
 	//= label case: use UpperCamelCase
 lowerCamelCase:
 }
+
+func untypedConstCoerce() {
+	const zero = 0
+
+	//= untyped const coerce: specity type in RHS, like in `var x = T(const)`
+	var _ int = zero
+	var _ = int32(10)
+	var _ = int64(zero + 1)
+}

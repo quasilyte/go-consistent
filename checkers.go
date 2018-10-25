@@ -331,6 +331,78 @@ func (c *labelCaseChecker) Visit(n ast.Node) bool {
 	return true
 }
 
+type untypedConstCoerceChecker struct {
+	checkerBase
+
+	lhsType opVariant
+	rhsType opVariant
+}
+
+func newUntypedConstCoerceChecker(ctxt *context) checker {
+	c := &untypedConstCoerceChecker{}
+	c.ctxt = ctxt
+	c.lhsType.warning = "specify type in LHS, like in `var x T = const`"
+	c.rhsType.warning = "specity type in RHS, like in `var x = T(const)`"
+	c.op = &operation{
+		name:     "untyped const coerce",
+		variants: []*opVariant{&c.lhsType, &c.rhsType},
+	}
+	return c
+}
+
+func (c *untypedConstCoerceChecker) Visit(n ast.Node) bool {
+	decl, ok := n.(*ast.GenDecl)
+	if !ok {
+		return true
+	}
+	if decl.Tok != token.VAR && decl.Tok != token.CONST {
+		return false
+	}
+	if len(decl.Specs) != 1 {
+		return false
+	}
+	spec := decl.Specs[0].(*ast.ValueSpec)
+	if len(spec.Names) != 1 {
+		return false
+	}
+
+	if spec.Type != nil {
+		if !c.isUntypedConst(spec.Values[0]) {
+			return false
+		}
+		c.ctxt.mark(n, &c.lhsType)
+	} else {
+		conv, ok := spec.Values[0].(*ast.CallExpr)
+		if !ok {
+			return false
+		}
+		if len(conv.Args) != 1 || !c.isUntypedConst(conv.Args[0]) {
+			return false
+		}
+		c.ctxt.mark(n, &c.rhsType)
+	}
+
+	return false
+}
+
+func (c *untypedConstCoerceChecker) isUntypedConst(e ast.Expr) bool {
+	switch e := e.(type) {
+	case *ast.BasicLit:
+		return true
+	case *ast.Ident:
+		typ, ok := c.ctxt.info.ObjectOf(e).Type().(*types.Basic)
+		return ok && typ.Info()&types.IsUntyped != 0
+	case *ast.BinaryExpr:
+		return c.isUntypedConst(e.X) && c.isUntypedConst(e.Y)
+	case *ast.UnaryExpr:
+		return c.isUntypedConst(e.X)
+	case *ast.ParenExpr:
+		return c.isUntypedConst(e.X)
+	default:
+		return false
+	}
+}
+
 type emptyMapChecker struct {
 	checkerBase
 

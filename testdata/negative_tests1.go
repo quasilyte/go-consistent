@@ -65,3 +65,11 @@ FOO:
 UPPER_CAMEL_CASE:
 LOWER_CAMEL_CASE:
 }
+
+func untypedConstCoerce() {
+	const zero = 0
+
+	var _ int = zero
+	var _ int32 = 10
+	var _ int64 = (zero + 1)
+}

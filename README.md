@@ -171,3 +171,15 @@ LabelName:
 // C: lower camel case
 labelName:
 ```
+
+#### untyped const coerce
+
+```go
+// A: LHS type
+var x int32 = 10
+const y float32 = 1.6
+
+// B: RHS type
+var x = int32(10)
+const y = float32(1.6)
+```

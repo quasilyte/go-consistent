@@ -86,3 +86,12 @@ UpperCamelCase:
 	//= label case: use ALL_UPPER
 lowerCamelCase:
 }
+
+func untypedConstCoerce() {
+	const zero = 0
+
+	var _ int = zero
+	var _ int32 = 10
+	//= untyped const coerce: specify type in LHS, like in `var x T = const`
+	var _ = int64(zero + 1)
+}
