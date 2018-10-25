@@ -4,7 +4,7 @@ Source code analyzer that helps you to make your Go programs more consistent.
 
 ## Quick start / Installation
 
-This installs `go-consistent` binary under your `$GOPATH/bin`:
+This install `go-consistent` binary under your `$GOPATH/bin`:
 
 ```bash
 go get github.com/Quasilyte/go-consistent
@@ -23,9 +23,8 @@ You can pass package names and separate Go filenames to the `go-consistent` tool
 go-consistent foo.go bar.go mypkg
 ```
 
-> Arguments like `...` are planned, but are not implemented yet.
-
-`go-consistent` checks provided Go source code for consistency.
+You can also use `std`, `./...` and other conventional targets that are normally
+understood by Go tools.
 
 * If you want to check consistency of a single file or package, just provide their name
 * If you want to check the whole project, you should pass **all** its packages as an arguments
@@ -57,5 +56,9 @@ There are many similar cases where you have 2 or more options of expressing the 
 
 ### Project traits
 
-* Zero-configuration. Defaults should be good enough for most users. Other configuration is performed using command line arguments.
-* Can handle any size of projects. This means that there should be no significant memory consumption growth with the increased number of packages being checked. There can be "fast, but memory-hungry" option that can work best for small-average proejcts, but it should be always possible to check huge projects on the developer machine.
+* Zero-configuration. Defaults should be good enough for most users.
+  Other configuration is performed using command line arguments.
+* Can handle any size of projects. This means that there should be no significant
+  memory consumption growth with the increased number of packages being checked.
+  There can be "fast, but memory-hungry" option that can work best forsmall-average projects,
+  but it should be always possible to check huge projects on the developer machine.
