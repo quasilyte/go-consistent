@@ -362,7 +362,7 @@ func (c *untypedConstCoerceChecker) Visit(n ast.Node) bool {
 		return false
 	}
 	spec := decl.Specs[0].(*ast.ValueSpec)
-	if len(spec.Names) != 1 {
+	if len(spec.Names) != 1 || len(spec.Values) != 0 {
 		return false
 	}
 
