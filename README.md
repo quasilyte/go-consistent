@@ -29,6 +29,14 @@ understood by Go tools.
 * If you want to check consistency of a single file or package, just provide their name
 * If you want to check the whole project, you should pass **all** its packages as an arguments
 
+Suppose your project occupies separate `$GOPATH`, then you can check the entire
+project by doing:
+
+```bash
+cd $(go env GOPATH)/src
+go-consistent -v ./...
+```
+
 ## Overview
 
 To understand what `go-consistent` does, take a look at these 3 lines of code:
