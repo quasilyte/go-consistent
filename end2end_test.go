@@ -10,7 +10,6 @@ import (
 
 func TestEnd2End(t *testing.T) {
 	filenames := []string{
-		// "positive_tests0.go",
 		"positive_tests1.go",
 		"positive_tests2.go",
 		"positive_tests3.go",
