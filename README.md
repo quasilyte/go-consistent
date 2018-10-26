@@ -80,7 +80,7 @@ There are many similar cases where you have 2 or more options of expressing the 
 1. [hex lit](#hex-lit)
 1. [range check](#range-check)
 1. [and-not](#and-not)
-1. [float-lit](#float-lit)
+1. [float lit](#float-lit)
 1. [label case](#label-case)
 1. [untyped const coerce](#untyped-const-coerce)
 
