@@ -83,6 +83,7 @@ There are many similar cases where you have 2 or more options of expressing the 
 1. [float lit](#float-lit)
 1. [label case](#label-case)
 1. [untyped const coerce](#untyped-const-coerce)
+1. [arg list parens](#arg-list-parens)
 
 #### unit import
 
@@ -193,4 +194,21 @@ const y float32 = 1.6
 // B: RHS type
 var x = int32(10)
 const y = float32(1.6)
+```
+
+#### arg list parens
+
+```go
+// A: closing parenthesis on the same line
+multiLineCall(
+	a,
+	b,
+	c)
+
+// B: closing parenthesis on the next line
+multiLineCall(
+	a,
+	b,
+	c,
+)
 ```

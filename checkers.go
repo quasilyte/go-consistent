@@ -507,6 +507,47 @@ func (c *emptySliceChecker) Visit(n ast.Node) bool {
 	return true
 }
 
+type argListParensChecker struct {
+	checkerBase
+
+	sameLine opVariant
+	nextLine opVariant
+}
+
+func newArgListParensChecker(ctxt *context) checker {
+	c := &argListParensChecker{}
+	c.ctxt = ctxt
+	c.sameLine.warning = "align `)` to a same line with last argument"
+	c.nextLine.warning = "move `)` to the next line and put `,` after the last argument"
+	c.op = &operation{
+		name:     "arg list parens",
+		variants: []*opVariant{&c.sameLine, &c.nextLine},
+	}
+	return c
+}
+
+func (c *argListParensChecker) Visit(n ast.Node) bool {
+	call, ok := n.(*ast.CallExpr)
+	if !ok || len(call.Args) < 2 {
+		return true
+	}
+	lastArg := call.Args[len(call.Args)-1]
+	lastArgLine := c.ctxt.fset.Position(lastArg.Pos()).Line
+	firstArgLine := c.ctxt.fset.Position(call.Args[0].Pos()).Line
+	if firstArgLine == lastArgLine {
+		// Don't track single-line function calls.
+		return true
+	}
+	rparenLine := c.ctxt.fset.Position(call.Rparen).Line
+	switch {
+	case lastArgLine == rparenLine:
+		c.ctxt.mark(n, &c.sameLine)
+	case lastArgLine+1 == rparenLine:
+		c.ctxt.mark(n, &c.nextLine)
+	}
+	return true
+}
+
 type unitImportChecker struct {
 	checkerBase
 

@@ -97,3 +97,22 @@ func untypedConstCoerce() {
 	var _ = int32(10)
 	var _ = int64(zero + 1)
 }
+
+func threeArgs(a, b, c int) {}
+
+func argListParens() {
+	//= arg list parens: move `)` to the next line and put `,` after the last argument
+	threeArgs(
+		1,
+		2,
+		3)
+	threeArgs(1,
+		2,
+		3,
+	)
+	threeArgs(
+		1,
+		2,
+		3,
+	)
+}

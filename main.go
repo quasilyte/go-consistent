@@ -119,6 +119,7 @@ func (ctxt *context) initCheckers() error {
 		newFloatLitChecker(ctxt),
 		newLabelCaseChecker(ctxt),
 		newUntypedConstCoerceChecker(ctxt),
+		newArgListParensChecker(ctxt),
 	}
 
 	variantID := 0

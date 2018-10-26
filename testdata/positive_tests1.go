@@ -95,3 +95,21 @@ func untypedConstCoerce() {
 	//= untyped const coerce: specify type in LHS, like in `var x T = const`
 	var _ = int64(zero + 1)
 }
+
+func threeArgs(a, b, c int) {}
+
+func argListParens() {
+	threeArgs(
+		1,
+		2,
+		3)
+	threeArgs(1,
+		2,
+		3)
+	//= arg list parens: align `)` to a same line with last argument
+	threeArgs(
+		1,
+		2,
+		3,
+	)
+}
