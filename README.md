@@ -73,6 +73,17 @@ There are many similar cases where you have 2 or more options of expressing the 
 
 ### Complete list of checks performed
 
+1. [unit import](#unit-import)
+1. [zero val ptr alloc](#zero-val-ptr-alloc)
+1. [empty slice](#empty-slice)
+1. [empty map](#empty-map)
+1. [hex lit](#hex-lit)
+1. [range check](#range-check)
+1. [and-not](#and-not)
+1. [float-lit](#float-lit)
+1. [label case](#label-case)
+1. [untyped const coerce](#untyped-const-coerce)
+
 #### unit import
 
 ```go
