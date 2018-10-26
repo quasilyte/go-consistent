@@ -539,10 +539,10 @@ func (c *argListParensChecker) Visit(n ast.Node) bool {
 		return true
 	}
 	rparenLine := c.ctxt.fset.Position(call.Rparen).Line
-	switch {
-	case lastArgLine == rparenLine:
+	switch rparenLine {
+	case lastArgLine:
 		c.ctxt.mark(n, &c.sameLine)
-	case lastArgLine+1 == rparenLine:
+	case lastArgLine+1:
 		c.ctxt.mark(n, &c.nextLine)
 	}
 	return true
