@@ -542,7 +542,7 @@ func (c *argListParensChecker) Visit(n ast.Node) bool {
 	switch rparenLine {
 	case lastArgLine:
 		c.ctxt.mark(n, &c.sameLine)
-	case lastArgLine+1:
+	case lastArgLine + 1:
 		c.ctxt.mark(n, &c.nextLine)
 	}
 	return true

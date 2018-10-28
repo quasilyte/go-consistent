@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/go-toolsmith/astinfo"
 	"github.com/kisielk/gotool"
@@ -46,6 +47,7 @@ type context struct {
 	flags struct {
 		pedantic bool
 		verbose  bool
+		debug    bool
 		targets  []string
 		exclude  string
 	}
@@ -67,7 +69,9 @@ func (ctxt *context) parseFlags() error {
 	flag.BoolVar(&ctxt.flags.pedantic, "pedantic", false,
 		`makes several diagnostics more pedantic and comprehensive`)
 	flag.BoolVar(&ctxt.flags.verbose, "v", false,
-		`print information that is useful for debugging`)
+		`turn on additional info message printing`)
+	flag.BoolVar(&ctxt.flags.debug, "debug", false,
+		`turn on detailed program execution info printing`)
 	flag.StringVar(&ctxt.flags.exclude, "exclude", `^unsafe$|^builtin$`,
 		`import path excluding regexp`)
 
@@ -100,8 +104,8 @@ func (ctxt *context) resolveTargets() error {
 	}
 	ctxt.paths = paths
 
-	if ctxt.flags.verbose && len(paths) == 0 {
-		log.Printf("\tdebug: import paths list is empty after filtering")
+	if len(paths) == 0 {
+		ctxt.infoPrintf("import paths list is empty after filtering")
 	}
 
 	return nil
@@ -146,17 +150,22 @@ func (ctxt *context) initCheckers() error {
 
 func (ctxt *context) collectAllCandidates() error {
 	for _, path := range ctxt.paths {
-		if ctxt.flags.verbose {
-			log.Printf("\tdebug: check %s", path)
-		}
-		if err := ctxt.collectCandidates(path); err != nil {
+		ctxt.infoPrintf("check %q", path)
+		if err := ctxt.collectPathCandidates(path); err != nil {
 			return fmt.Errorf("%s: %v", path, err)
 		}
 	}
 	return nil
 }
 
-func (ctxt *context) collectCandidates(path string) error {
+func (ctxt *context) collectPackageCandidates(pkg *packages.Package) {
+	ctxt.info = pkg.TypesInfo
+	for _, f := range pkg.Syntax {
+		ctxt.collectFileCandidates(f)
+	}
+}
+
+func (ctxt *context) collectPathCandidates(path string) error {
 	ctxt.fset = token.NewFileSet()
 
 	conf := &packages.Config{
@@ -172,30 +181,27 @@ func (ctxt *context) collectCandidates(path string) error {
 	if err != nil {
 		return err
 	}
+	if len(pkgs) == 0 {
+		ctxt.infoPrintf("got 0 packages for %q path", path)
+		return nil
+	}
+
+	seenTests := false
 	for _, pkg := range pkgs {
-		// For a single import path, go/package can produce
-		// up to (?) four packages:
-		//	# ID                        name         path
-		//	1 $path                     $path        $path
-		//	2 $path [$path.test]        $path        $path
-		//	3 ${path}_test [$path.test] ${path}_test ${path}_test
-		//	4 $path.test                main         $path.test
-		//
-		// We only need $path (1) and ${path}_test (3).
-
-		// Get rid of (2).
-		if path == pkg.PkgPath && pkg.ID != path {
+		// For some patterns Load returns 4 packages.
+		// We need at most 2 and both of them should
+		// have [$pkg.test] parts in their ID.
+		if !strings.Contains(pkg.ID, ".test]") {
 			continue
 		}
-		// Get rid of (4).
-		if path != "main" && pkg.Name == "main" {
-			continue
+		ctxt.collectPackageCandidates(pkg)
+		if pkg.PkgPath == path {
+			seenTests = true
 		}
-
-		ctxt.info = pkg.TypesInfo
-		for _, f := range pkg.Syntax {
-			ctxt.collectFileCandidates(f)
-		}
+	}
+	if !seenTests {
+		// Use the standard package if there were no tests.
+		ctxt.collectPackageCandidates(pkgs[0])
 	}
 
 	return nil
@@ -260,5 +266,17 @@ func visitWarings(ctxt *context, visit func(pos token.Position, v *opVariant)) {
 		}
 		pos := ctxt.locs.Get(c.locationID)
 		visit(pos, v)
+	}
+}
+
+func (ctxt *context) debugPrintf(format string, args ...interface{}) {
+	if ctxt.flags.debug {
+		log.Printf("\tdebug: "+format, args...)
+	}
+}
+
+func (ctxt *context) infoPrintf(format string, args ...interface{}) {
+	if ctxt.flags.verbose {
+		log.Printf("\tinfo: "+format, args...)
 	}
 }
