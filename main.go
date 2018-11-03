@@ -195,7 +195,7 @@ func (ctxt *context) collectPathCandidates(path string) error {
 			continue
 		}
 		ctxt.collectPackageCandidates(pkg)
-		if pkg.PkgPath == path {
+		if !strings.HasSuffix(pkg.Name, "_test") {
 			seenTests = true
 		}
 	}
