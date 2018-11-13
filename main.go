@@ -16,6 +16,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var generatedFileCommentRE = regexp.MustCompile("Code generated .* DO NOT EDIT.")
+
 func main() {
 	log.SetFlags(0)
 	var ctxt context
@@ -161,6 +163,11 @@ func (ctxt *context) collectAllCandidates() error {
 func (ctxt *context) collectPackageCandidates(pkg *packages.Package) {
 	ctxt.info = pkg.TypesInfo
 	for _, f := range pkg.Syntax {
+		isGenerated := len(f.Comments) != 0 &&
+			generatedFileCommentRE.MatchString(f.Comments[0].Text())
+		if isGenerated {
+			continue
+		}
 		ctxt.collectFileCandidates(f)
 	}
 }
