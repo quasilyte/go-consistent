@@ -142,10 +142,10 @@ map[K]V{}
 #### range check
 
 ```go
-// A: center-aligned
+// A: left-aligned
 x > low && x < high
 
-// B: left-aligned
+// B: center-aligned
 low < x && x < high
 ```
 
