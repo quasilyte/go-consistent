@@ -85,6 +85,7 @@ There are many similar cases where you have 2 or more options of expressing the 
 1. [untyped const coerce](#untyped-const-coerce)
 1. [arg list parens](#arg-list-parens)
 1. [non-zero length test](#non-zero-length-test)
+1. [default case order](#default-case-order)
 
 #### unit import
 
@@ -225,4 +226,24 @@ len(xs) > 0
 
 // C: compare as "at least 1 element"
 len(xs) >= 1
+```
+
+#### default case order
+
+```go
+// A: default case is the first one
+switch {
+default:
+	return "?"
+case x > 10:
+	return "more than 10"
+}
+
+// B: default case is the last one
+switch {
+case x > 10:
+	return "more than 10"
+default:
+	return "?"
+}
 ```

@@ -83,6 +83,60 @@ type candidate struct {
 	locationID int
 }
 
+type defaultCaseOrderChecker struct {
+	checkerBase
+
+	first opVariant
+	last  opVariant
+}
+
+func newDefaultCaseOrderChecker(ctxt *context) checker {
+	c := &defaultCaseOrderChecker{}
+	c.ctxt = ctxt
+	c.first.warning = "default case should be the first case"
+	c.last.warning = "default case should be the last case"
+	c.op = &operation{
+		name:     "default case order",
+		variants: []*opVariant{&c.first, &c.last},
+	}
+	return c
+}
+
+func (c *defaultCaseOrderChecker) Visit(n ast.Node) bool {
+	cases := c.casesList(n)
+	if len(cases) < 2 {
+		return true
+	}
+	switch c.defaultCaseIndex(cases) {
+	case 0:
+		c.ctxt.mark(n, &c.first)
+	case len(cases) - 1:
+		c.ctxt.mark(n, &c.last)
+	}
+	return true
+}
+
+func (c *defaultCaseOrderChecker) casesList(n ast.Node) []ast.Stmt {
+	switch n := n.(type) {
+	case *ast.TypeSwitchStmt:
+		return n.Body.List
+	case *ast.SwitchStmt:
+		return n.Body.List
+	default:
+		return nil
+	}
+}
+
+func (c *defaultCaseOrderChecker) defaultCaseIndex(cases []ast.Stmt) int {
+	for i, stmt := range cases {
+		cc := stmt.(*ast.CaseClause)
+		if cc.List == nil {
+			return i
+		}
+	}
+	return -1
+}
+
 type nonZeroLenTestChecker struct {
 	checkerBase
 

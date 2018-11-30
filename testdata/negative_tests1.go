@@ -106,3 +106,21 @@ func nonZeroLenTestChecker() {
 	_ = len(ch) != 0
 	_ = len(ch) != 0
 }
+
+func defaultCaseOrder(x int, v interface{}) {
+	switch x {
+	default:
+	case 10:
+	}
+
+	switch v.(type) {
+	default:
+	case int:
+	case string:
+	}
+
+	switch {
+	default:
+	case x > 20:
+	}
+}

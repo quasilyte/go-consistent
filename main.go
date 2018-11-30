@@ -127,6 +127,7 @@ func (ctxt *context) initCheckers() error {
 		newUntypedConstCoerceChecker(ctxt),
 		newArgListParensChecker(ctxt),
 		newNonZeroLenTestChecker(ctxt),
+		newDefaultCaseOrderChecker(ctxt),
 	}
 
 	variantID := 0
