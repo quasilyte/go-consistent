@@ -113,3 +113,24 @@ func argListParens() {
 		3,
 	)
 }
+
+func nonZeroLenTestChecker() {
+	var (
+		s  string
+		b  []byte
+		m  map[int]int
+		ch chan int
+	)
+
+	// Strings are ignored.
+	_ = len(s) >= 1
+	_ = len(s) >= 1
+	_ = len(s) >= 1
+
+	_ = len(b) != 0
+	_ = len(m) != 0
+	//= non-zero length test: use `len(s) != 0`
+	_ = len(ch) > 0
+	//= non-zero length test: use `len(s) != 0`
+	_ = len(ch) >= 1
+}

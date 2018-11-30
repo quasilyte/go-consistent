@@ -10,3 +10,24 @@ Foo:
 anotherLowerCamelCase:
 lowerCamelCase:
 }
+
+func nonZeroLenTestChecker() {
+	var (
+		s  string
+		b  []byte
+		m  map[int]int
+		ch chan int
+	)
+
+	// Strings are ignored.
+	_ = len(s) > 0
+	_ = len(s) > 0
+	_ = len(s) > 0
+
+	//= non-zero length test: use `len(s) >= 1`
+	_ = len(b) != 0
+	//= non-zero length test: use `len(s) >= 1`
+	_ = len(m) > 0
+	_ = len(ch) >= 1
+	_ = len(ch) >= 1
+}

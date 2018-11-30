@@ -7,7 +7,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/go-toolsmith/astcast"
 	"github.com/go-toolsmith/astequal"
+	"github.com/go-toolsmith/typep"
 )
 
 func (ctxt *context) mark(n ast.Node, v *opVariant) {
@@ -79,6 +81,48 @@ func (c *checkerBase) Operation() *operation {
 type candidate struct {
 	variantID  int
 	locationID int
+}
+
+type nonZeroLenTestChecker struct {
+	checkerBase
+
+	neq0 opVariant
+	gt0  opVariant
+	gte1 opVariant
+}
+
+func newNonZeroLenTestChecker(ctxt *context) checker {
+	c := &nonZeroLenTestChecker{}
+	c.ctxt = ctxt
+	c.neq0.warning = "use `len(s) != 0`"
+	c.gt0.warning = "use `len(s) > 0`"
+	c.gte1.warning = "use `len(s) >= 1`"
+	c.op = &operation{
+		name:     "non-zero length test",
+		variants: []*opVariant{&c.neq0, &c.gt0, &c.gte1},
+	}
+	return c
+}
+
+func (c *nonZeroLenTestChecker) Visit(n ast.Node) bool {
+	cmp := astcast.ToBinaryExpr(n)
+	call := astcast.ToCallExpr(cmp.X)
+	if len(call.Args) != 1 || astcast.ToIdent(call.Fun).Name != "len" {
+		return true
+	}
+	x := call.Args[0]
+	if typep.HasStringKind(c.ctxt.info.TypeOf(x)) {
+		return true
+	}
+	switch val := valueOf(cmp.Y); {
+	case cmp.Op == token.NEQ && val == "0":
+		c.ctxt.mark(n, &c.neq0)
+	case cmp.Op == token.GTR && val == "0":
+		c.ctxt.mark(n, &c.gt0)
+	case cmp.Op == token.GEQ && val == "1":
+		c.ctxt.mark(n, &c.gte1)
+	}
+	return true
 }
 
 type zeroValPtrAllocChecker struct {

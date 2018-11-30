@@ -84,6 +84,7 @@ There are many similar cases where you have 2 or more options of expressing the 
 1. [label case](#label-case)
 1. [untyped const coerce](#untyped-const-coerce)
 1. [arg list parens](#arg-list-parens)
+1. [non-zero length test](#non-zero-length-test)
 
 #### unit import
 
@@ -211,4 +212,17 @@ multiLineCall(
 	b,
 	c,
 )
+```
+
+#### non-zero length test
+
+```go
+// A: compare as "number of elems not equal to zero"
+len(xs) != 0
+
+// B: compare as "more than 0 elements"
+len(xs) > 0
+
+// C: compare as "at least 1 element"
+len(xs) >= 1
 ```
