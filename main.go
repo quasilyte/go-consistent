@@ -225,9 +225,7 @@ func (ctxt *context) collectFileCandidates(f *ast.File) {
 
 	for _, c := range ctxt.checkers {
 		for _, decl := range f.Decls {
-			ast.Inspect(decl, func(n ast.Node) bool {
-				return c.Visit(n)
-			})
+			ast.Inspect(decl, c.Visit)
 		}
 	}
 }
