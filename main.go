@@ -9,9 +9,9 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/go-toolsmith/astinfo"
+	"github.com/go-toolsmith/pkgload"
 	"github.com/kisielk/gotool"
 	"golang.org/x/tools/go/packages"
 )
@@ -195,23 +195,17 @@ func (ctxt *context) collectPathCandidates(path string) error {
 		return nil
 	}
 
-	seenTests := false
-	for _, pkg := range pkgs {
-		// For some patterns Load returns 4 packages.
-		// We need at most 2 and both of them should
-		// have [$pkg.test] parts in their ID.
-		if !strings.Contains(pkg.ID, ".test]") {
-			continue
+	pkgload.VisitUnits(pkgs, func(u *pkgload.Unit) {
+		if u.ExternalTest != nil {
+			ctxt.collectPackageCandidates(u.ExternalTest)
 		}
-		ctxt.collectPackageCandidates(pkg)
-		if !strings.HasSuffix(pkg.Name, "_test") {
-			seenTests = true
+		if u.Test != nil {
+			// Prefer tests to the base package, if present.
+			ctxt.collectPackageCandidates(u.Test)
+		} else {
+			ctxt.collectPackageCandidates(u.Base)
 		}
-	}
-	if !seenTests {
-		// Use the standard package if there were no tests.
-		ctxt.collectPackageCandidates(pkgs[0])
-	}
+	})
 
 	return nil
 }
