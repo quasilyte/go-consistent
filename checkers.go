@@ -280,12 +280,12 @@ func newRangeCheckChecker(ctxt *context) checker {
 }
 
 func (c *rangeCheckChecker) Visit(n ast.Node) bool {
-	e := asBinaryExpr(n)
+	e := astcast.ToBinaryExpr(n)
 	if e.Op != token.LAND && e.Op != token.LOR {
 		return true
 	}
-	lhs := asBinaryExpr(e.X)
-	rhs := asBinaryExpr(e.Y)
+	lhs := astcast.ToBinaryExpr(e.X)
+	rhs := astcast.ToBinaryExpr(e.Y)
 
 	leftAligned := (lhs.Op == token.GTR || lhs.Op == token.GEQ) &&
 		(rhs.Op == token.LSS || rhs.Op == token.LEQ) &&
@@ -326,11 +326,11 @@ func newAndNotChecker(ctxt *context) checker {
 }
 
 func (c *andNotChecker) Visit(n ast.Node) bool {
-	e := asBinaryExpr(n)
+	e := astcast.ToBinaryExpr(n)
 	switch {
 	case e.Op == token.AND_NOT:
 		c.ctxt.mark(n, &c.noSpace)
-	case e.Op == token.AND && asUnaryExpr(e.Y).Op == token.XOR:
+	case e.Op == token.AND && astcast.ToUnaryExpr(e.Y).Op == token.XOR:
 		c.ctxt.mark(n, &c.withSpace)
 	}
 	return true
