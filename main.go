@@ -194,6 +194,9 @@ func (ctxt *context) collectPathCandidates(path string) error {
 		ctxt.infoPrintf("got 0 packages for %q path", path)
 		return nil
 	}
+	if n := packages.PrintErrors(pkgs); n > 0 {
+		return fmt.Errorf("%d build errors", n)
+	}
 
 	pkgload.VisitUnits(pkgs, func(u *pkgload.Unit) {
 		if u.ExternalTest != nil {
