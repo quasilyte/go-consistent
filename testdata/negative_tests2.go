@@ -75,6 +75,10 @@ AllUpper:
 Foo:
 UpperCamelCase:
 LowerCamelCase:
+	goto AllUpper
+	goto Foo
+	goto UpperCamelCase
+	goto LowerCamelCase
 }
 
 func untypedConstCoerce() {

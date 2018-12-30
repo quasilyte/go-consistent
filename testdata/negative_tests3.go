@@ -7,6 +7,10 @@ allUpper:
 foo:
 anotherLowerCamelCase:
 lowerCamelCase:
+	goto allUpper
+	goto foo
+	goto anotherLowerCamelCase
+	goto lowerCamelCase
 }
 
 func nonZeroLenTestChecker() {

@@ -87,6 +87,10 @@ Foo:
 UpperCamelCase:
 	//= label case: use UpperCamelCase
 lowerCamelCase:
+	goto ALL_UPPER
+	goto Foo
+	goto UpperCamelCase
+	goto lowerCamelCase
 }
 
 func untypedConstCoerce() {

@@ -64,6 +64,10 @@ ALL_UPPER:
 FOO:
 UPPER_CAMEL_CASE:
 LOWER_CAMEL_CASE:
+	goto ALL_UPPER
+	goto FOO
+	goto UPPER_CAMEL_CASE
+	goto LOWER_CAMEL_CASE
 }
 
 func untypedConstCoerce() {
@@ -73,6 +77,8 @@ func untypedConstCoerce() {
 	var _ int32 = 10
 	var _ int64 = (zero + 1)
 }
+
+func threeArgs(a, b, c int) {}
 
 func argListParens() {
 	threeArgs(
