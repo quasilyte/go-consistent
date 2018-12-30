@@ -1,5 +1,8 @@
 # go-consistent
 
+[![Build Status](https://travis-ci.org/Quasilyte/go-consistent.svg?branch=master)](https://travis-ci.org/Quasilyte/go-consistent)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Quasilyte/go-consistent)](https://goreportcard.com/report/github.com/Quasilyte/go-consistent)
+
 Source code analyzer that helps you to make your Go programs more consistent.
 
 ## Quick start / Installation
