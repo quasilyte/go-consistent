@@ -676,3 +676,39 @@ func (c *unitImportChecker) Visit(n ast.Node) bool {
 	}
 	return false
 }
+
+type sameTypeArgumentsChecker struct {
+	checkerBase
+
+	allTypesPresent     opVariant
+	optionalTypesOmited opVariant
+}
+
+func newSameTypeArgumentsChecker(ctxt *context) checker {
+	c := &sameTypeArgumentsChecker{}
+	c.ctxt = ctxt
+	c.allTypesPresent.warning = "use types always after each argument"
+	c.optionalTypesOmited.warning = "use only one type declaration after several arguments of the same type"
+	c.op = &operation{
+		name:     "same type arguments",
+		variants: []*opVariant{&c.allTypesPresent, &c.optionalTypesOmited},
+	}
+	return c
+}
+
+func (c *sameTypeArgumentsChecker) Visit(n ast.Node) bool {
+	fun, ok := n.(*ast.FuncDecl)
+	if !ok {
+		return true
+	}
+
+	for _, param := range fun.Type.Params.List {
+		if len(param.Names) > 1 {
+			c.ctxt.mark(n, &c.optionalTypesOmited)
+		} else {
+			c.ctxt.mark(n, &c.allTypesPresent)
+		}
+	}
+
+	return false
+}
