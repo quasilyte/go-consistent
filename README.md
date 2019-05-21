@@ -1,7 +1,7 @@
 # go-consistent
 
-[![Build Status](https://travis-ci.org/Quasilyte/go-consistent.svg?branch=master)](https://travis-ci.org/Quasilyte/go-consistent)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Quasilyte/go-consistent)](https://goreportcard.com/report/github.com/Quasilyte/go-consistent)
+[![Build Status](https://travis-ci.org/quasilyte/go-consistent.svg?branch=master)](https://travis-ci.org/quasilyte/go-consistent)
+[![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-consistent)](https://goreportcard.com/report/github.com/quasilyte/go-consistent)
 
 Source code analyzer that helps you to make your Go programs more consistent.
 
@@ -10,7 +10,7 @@ Source code analyzer that helps you to make your Go programs more consistent.
 This install `go-consistent` binary under your `$GOPATH/bin`:
 
 ```bash
-go get github.com/Quasilyte/go-consistent
+go get github.com/quasilyte/go-consistent
 ```
 
 If `$GOPATH/bin` is under your system `$PATH`, `go-consistent` command should be available after that.<br>

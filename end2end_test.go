@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Quasilyte/go-consistent/internal/end2end"
+	"github.com/quasilyte/go-consistent/internal/end2end"
 )
 
 func TestEnd2End(t *testing.T) {

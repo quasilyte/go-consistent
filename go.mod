@@ -1,4 +1,4 @@
-module github.com/Quasilyte/go-consistent
+module github.com/quasilyte/go-consistent
 
 require (
 	github.com/go-toolsmith/astcast v1.0.0
