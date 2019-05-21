@@ -33,7 +33,7 @@ func TestEnd2End(t *testing.T) {
 				t.Fatalf("collect candidates: %v", err)
 			}
 			ctxt.assignSuggestions()
-			visitWarings(&ctxt, func(pos token.Position, v *opVariant) {
+			visitWarnings(&ctxt, func(pos token.Position, v *opVariant) {
 				text := v.op.name + ": " + v.op.suggested.warning
 				mlist, ok := f.Matchers[pos.Line]
 				if !ok {

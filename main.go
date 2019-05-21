@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/token"
 	"go/types"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/go-toolsmith/astinfo"
 	"github.com/go-toolsmith/pkgload"
@@ -47,12 +49,15 @@ type context struct {
 	//
 	// For per-argument documentation see context.parseFlags.
 	flags struct {
-		pedantic bool
-		verbose  bool
-		debug    bool
-		targets  []string
-		exclude  string
+		pedantic           bool
+		verbose            bool
+		shorterErrLocation bool
+
+		targets []string
+		exclude string
 	}
+
+	workDir string
 
 	paths []string
 
@@ -71,9 +76,9 @@ func (ctxt *context) parseFlags() error {
 	flag.BoolVar(&ctxt.flags.pedantic, "pedantic", false,
 		`makes several diagnostics more pedantic and comprehensive`)
 	flag.BoolVar(&ctxt.flags.verbose, "v", false,
-		`turn on additional info message printing`)
-	flag.BoolVar(&ctxt.flags.debug, "debug", false,
 		`turn on detailed program execution info printing`)
+	flag.BoolVar(&ctxt.flags.shorterErrLocation, `shorterErrLocation`, true,
+		`whether to replace error location prefix with $GOROOT and $GOPATH`)
 	flag.StringVar(&ctxt.flags.exclude, "exclude", `^unsafe$|^builtin$`,
 		`import path excluding regexp`)
 
@@ -82,6 +87,14 @@ func (ctxt *context) parseFlags() error {
 	ctxt.flags.targets = flag.Args()
 	if len(ctxt.flags.targets) == 0 {
 		return fmt.Errorf("not enough positional args (empty targets list)")
+	}
+
+	if ctxt.flags.shorterErrLocation {
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Printf("getwd: %v", err)
+		}
+		ctxt.workDir = wd
 	}
 
 	return nil
@@ -242,15 +255,19 @@ func (ctxt *context) assignSuggestions() error {
 
 func (ctxt *context) printWarnings() error {
 	exitCode := 0
-	visitWarings(ctxt, func(pos token.Position, v *opVariant) {
+	visitWarnings(ctxt, func(pos token.Position, v *opVariant) {
 		exitCode = 1
-		fmt.Printf("%s: %s: %s\n", pos, v.op.name, v.op.suggested.warning)
+		loc := pos.String()
+		if ctxt.flags.shorterErrLocation {
+			loc = ctxt.shortenLocation(loc)
+		}
+		fmt.Printf("%s: %s: %s\n", loc, v.op.name, v.op.suggested.warning)
 	})
 	os.Exit(exitCode)
 	return nil
 }
 
-func visitWarings(ctxt *context, visit func(pos token.Position, v *opVariant)) {
+func visitWarnings(ctxt *context, visit func(pos token.Position, v *opVariant)) {
 	// Build variant map which is accessed by variantID.
 	vcount := 0
 	for _, c := range ctxt.checkers {
@@ -273,10 +290,25 @@ func visitWarings(ctxt *context, visit func(pos token.Position, v *opVariant)) {
 	}
 }
 
-func (ctxt *context) debugPrintf(format string, args ...interface{}) {
-	if ctxt.flags.debug {
-		log.Printf("\tdebug: "+format, args...)
+func (ctxt *context) shortenLocation(loc string) string {
+	// If possible, construct relative path.
+	relLoc := loc
+	if ctxt.workDir != "" {
+		relLoc = strings.Replace(loc, ctxt.workDir, ".", 1)
 	}
+
+	switch {
+	case strings.HasPrefix(loc, build.Default.GOPATH):
+		loc = strings.Replace(loc, build.Default.GOPATH, "$GOPATH", 1)
+	case strings.HasPrefix(loc, build.Default.GOROOT):
+		loc = strings.Replace(loc, build.Default.GOROOT, "$GOROOT", 1)
+	}
+
+	// Return the representation that is shorter.
+	if len(relLoc) < len(loc) {
+		return relLoc
+	}
+	return loc
 }
 
 func (ctxt *context) infoPrintf(format string, args ...interface{}) {
