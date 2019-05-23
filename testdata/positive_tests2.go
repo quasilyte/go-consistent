@@ -160,3 +160,15 @@ func defaultCaseOrder(x int, v interface{}) {
 	default:
 	}
 }
+
+func omitTypes(a, b, c int) {
+	return
+}
+
+func omitTypes2(a, b, c int) {
+	return
+}
+
+func allTypes(a int, b int, c int) { //= use only one type declaration after several arguments of the same type
+	return
+}
