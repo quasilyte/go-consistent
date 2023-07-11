@@ -52,6 +52,7 @@ type context struct {
 		pedantic           bool
 		verbose            bool
 		shorterErrLocation bool
+		noTypes            bool
 
 		targets []string
 		exclude string
@@ -79,6 +80,8 @@ func (ctxt *context) parseFlags() error {
 		`turn on detailed program execution info printing`)
 	flag.BoolVar(&ctxt.flags.shorterErrLocation, `shorterErrLocation`, true,
 		`whether to replace error location prefix with $GOROOT and $GOPATH`)
+	flag.BoolVar(&ctxt.flags.noTypes, "syntax-only", false,
+		`disable the typechecking; some checkers can't work without types information`)
 	flag.StringVar(&ctxt.flags.exclude, "exclude", `^unsafe$|^builtin$`,
 		`import path excluding regexp`)
 
@@ -143,11 +146,17 @@ func (ctxt *context) initCheckers() error {
 		newDefaultCaseOrderChecker(ctxt),
 	}
 
+	hasTypes := !ctxt.flags.noTypes
 	variantID := 0
+	enabledCheckers := checkers[:0]
 	for _, c := range checkers {
 		op := c.Operation()
 		if op.name == "" {
 			panic(fmt.Sprintf("%T: empty operation name", c))
+		}
+		if !hasTypes && op.needTypes {
+			ctxt.infoPrintf("checker %q is disabled (types information is required)", op.name)
+			continue
 		}
 		for i, v := range op.variants {
 			if v.warning == "" {
@@ -157,10 +166,11 @@ func (ctxt *context) initCheckers() error {
 			v.id = variantID
 			variantID++
 		}
+		enabledCheckers = append(enabledCheckers, c)
 	}
 
 	ctxt.locs = newLocationMap()
-	ctxt.checkers = checkers
+	ctxt.checkers = enabledCheckers
 
 	return nil
 }
@@ -190,8 +200,13 @@ func (ctxt *context) collectPackageCandidates(pkg *packages.Package) {
 func (ctxt *context) collectPathCandidates(path string) error {
 	ctxt.fset = token.NewFileSet()
 
+	loaderFlags := packages.NeedSyntax | packages.NeedName | packages.NeedFiles
+	if !ctxt.flags.noTypes {
+		loaderFlags |= packages.NeedTypes
+		loaderFlags |= packages.NeedTypesInfo
+	}
 	conf := &packages.Config{
-		Mode:  packages.LoadSyntax,
+		Mode:  loaderFlags,
 		Fset:  ctxt.fset,
 		Tests: true,
 	}
