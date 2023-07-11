@@ -36,6 +36,9 @@ type operation struct {
 	//
 	// Initialized by checker constructor.
 	variants []*opVariant
+
+	// whether this operation can't be analyzed without types information.
+	needTypes bool
 }
 
 type opVariant struct {
@@ -96,8 +99,9 @@ func newDefaultCaseOrderChecker(ctxt *context) checker {
 	c.first.warning = "default case should be the first case"
 	c.last.warning = "default case should be the last case"
 	c.op = &operation{
-		name:     "default case order",
-		variants: []*opVariant{&c.first, &c.last},
+		name:      "default case order",
+		variants:  []*opVariant{&c.first, &c.last},
+		needTypes: false,
 	}
 	return c
 }
@@ -152,8 +156,9 @@ func newNonZeroLenTestChecker(ctxt *context) checker {
 	c.gt0.warning = "use `len(s) > 0`"
 	c.gte1.warning = "use `len(s) >= 1`"
 	c.op = &operation{
-		name:     "non-zero length test",
-		variants: []*opVariant{&c.neq0, &c.gt0, &c.gte1},
+		name:      "non-zero length test",
+		variants:  []*opVariant{&c.neq0, &c.gt0, &c.gte1},
+		needTypes: true,
 	}
 	return c
 }
@@ -192,8 +197,9 @@ func newZeroValPtrAllocChecker(ctxt *context) checker {
 	c.newCall.warning = "use new(T) for *T allocation"
 	c.addressOfLit.warning = "use &T{} for *T allocation"
 	c.op = &operation{
-		name:     "zero value ptr alloc",
-		variants: []*opVariant{&c.newCall, &c.addressOfLit},
+		name:      "zero value ptr alloc",
+		variants:  []*opVariant{&c.newCall, &c.addressOfLit},
+		needTypes: true,
 	}
 	return c
 }
@@ -237,8 +243,9 @@ func newHexLitChecker(ctxt *context) checker {
 	c.lowerCase.warning = "use a-f (lower case) digits"
 	c.upperCase.warning = "use A-F (upper case) digits"
 	c.op = &operation{
-		name:     "hex lit",
-		variants: []*opVariant{&c.lowerCase, &c.upperCase},
+		name:      "hex lit",
+		variants:  []*opVariant{&c.lowerCase, &c.upperCase},
+		needTypes: false,
 	}
 	return c
 }
@@ -273,8 +280,9 @@ func newRangeCheckChecker(ctxt *context) checker {
 	c.alignLeft.warning = "use align-left, like in `x >= low && x <= high`"
 	c.alignCenter.warning = "use align-center, like in `low < x && x < high`"
 	c.op = &operation{
-		name:     "range check",
-		variants: []*opVariant{&c.alignLeft, &c.alignCenter},
+		name:      "range check",
+		variants:  []*opVariant{&c.alignLeft, &c.alignCenter},
+		needTypes: false,
 	}
 	return c
 }
@@ -319,8 +327,9 @@ func newAndNotChecker(ctxt *context) checker {
 	c.noSpace.warning = "remove a space between & and ^, like in `x &^ y`"
 	c.withSpace.warning = "put a space between & and ^, like in `x & ^y`"
 	c.op = &operation{
-		name:     "and-not",
-		variants: []*opVariant{&c.noSpace, &c.withSpace},
+		name:      "and-not",
+		variants:  []*opVariant{&c.noSpace, &c.withSpace},
+		needTypes: false,
 	}
 	return c
 }
@@ -349,8 +358,9 @@ func newFloatLitChecker(ctxt *context) checker {
 	c.explicitIntFrac.warning = "use explicit int/frac part, like in `1.0` and `0.1`"
 	c.implicitIntFrac.warning = "use implicit int/frac part, like in `1.` and `.1`"
 	c.op = &operation{
-		name:     "float lit",
-		variants: []*opVariant{&c.explicitIntFrac, &c.implicitIntFrac},
+		name:      "float lit",
+		variants:  []*opVariant{&c.explicitIntFrac, &c.implicitIntFrac},
+		needTypes: false,
 	}
 	return c
 }
@@ -409,6 +419,7 @@ func newLabelCaseChecker(ctxt *context) checker {
 			&c.upperCamelCase,
 			&c.lowerCamelCase,
 		},
+		needTypes: false,
 	}
 	return c
 }
@@ -442,8 +453,9 @@ func newUntypedConstCoerceChecker(ctxt *context) checker {
 	c.lhsType.warning = "specify type in LHS, like in `var x T = const`"
 	c.rhsType.warning = "specity type in RHS, like in `var x = T(const)`"
 	c.op = &operation{
-		name:     "untyped const coerce",
-		variants: []*opVariant{&c.lhsType, &c.rhsType},
+		name:      "untyped const coerce",
+		variants:  []*opVariant{&c.lhsType, &c.rhsType},
+		needTypes: true,
 	}
 	return c
 }
@@ -514,8 +526,9 @@ func newEmptyMapChecker(ctxt *context) checker {
 	c.makeCall.warning = "use make(map[K]V)"
 	c.mapLit.warning = "use map[K]V{}"
 	c.op = &operation{
-		name:     "empty map",
-		variants: []*opVariant{&c.makeCall, &c.mapLit},
+		name:      "empty map",
+		variants:  []*opVariant{&c.makeCall, &c.mapLit},
+		needTypes: true,
 	}
 	return c
 }
@@ -566,8 +579,9 @@ func newEmptySliceChecker(ctxt *context) checker {
 	c.makeCall.warning = "use make([]T, 0)"
 	c.sliceLit.warning = "use []T{}"
 	c.op = &operation{
-		name:     "empty slice",
-		variants: []*opVariant{&c.makeCall, &c.sliceLit},
+		name:      "empty slice",
+		variants:  []*opVariant{&c.makeCall, &c.sliceLit},
+		needTypes: true,
 	}
 	return c
 }
@@ -618,8 +632,9 @@ func newArgListParensChecker(ctxt *context) checker {
 	c.sameLine.warning = "align `)` to a same line with last argument"
 	c.nextLine.warning = "move `)` to the next line and put `,` after the last argument"
 	c.op = &operation{
-		name:     "arg list parens",
-		variants: []*opVariant{&c.sameLine, &c.nextLine},
+		name:      "arg list parens",
+		variants:  []*opVariant{&c.sameLine, &c.nextLine},
+		needTypes: false,
 	}
 	return c
 }
@@ -659,8 +674,9 @@ func newUnitImportChecker(ctxt *context) checker {
 	c.noParens.warning = "omit parenthesis in a single-package import"
 	c.withParens.warning = "wrap single-package import spec into parenthesis"
 	c.op = &operation{
-		name:     "unit import",
-		variants: []*opVariant{&c.noParens, &c.withParens},
+		name:      "unit import",
+		variants:  []*opVariant{&c.noParens, &c.withParens},
+		needTypes: false,
 	}
 	return c
 }
