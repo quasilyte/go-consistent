@@ -7,13 +7,13 @@ Source code analyzer that helps you to make your Go programs more consistent.
 
 ## Quick start / Installation
 
-This install `go-consistent` binary under your `$GOPATH/bin`:
+This install the `go-consistent` binary:
 
 ```bash
-go get github.com/quasilyte/go-consistent
+go install github.com/quasilyte/go-consistent
 ```
 
-If `$GOPATH/bin` is under your system `$PATH`, `go-consistent` command should be available after that.<br>
+If go install location is under your system `$PATH`, `go-consistent` command should be available after that.<br>
 This should print the help message:
 
 ```bash
@@ -32,11 +32,9 @@ understood by Go tools.
 * If you want to check consistency of a single file or package, just provide their name
 * If you want to check the whole project, you should pass **all** its packages as an arguments
 
-Suppose your project occupies separate `$GOPATH`, then you can check the entire
-project by doing:
+To check the entire project, run `go-consistent` like this:
 
 ```bash
-cd $(go env GOPATH)/src
 go-consistent -v ./...
 ```
 
