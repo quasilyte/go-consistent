@@ -1,0 +1,17 @@
+# This file adheres to the YAML5 style.
+{
+  "name": "Go Vulnerability Check",
+  "on": ["push"],
+  "jobs": {
+    "govulncheck_job": {
+      "name": "Run govulncheck",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/govulncheck-action@v1",
+          "id": "govulncheck",
+        },
+      ],
+    },
+  },
+}
