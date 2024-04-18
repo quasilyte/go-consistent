@@ -17,6 +17,8 @@
           "uses": "actions/setup-go@v5",
           "with": {"go-version": "${{ matrix.go }}" },
           "id": "go",
+          "cache": "true",
+          "cache-dependency-path": "**/go.sum",
         },
         {"name": "Check out code into the Go module directory", "uses": "actions/checkout@v4"},
         {"name": "Lint", "run": "make lint"},
