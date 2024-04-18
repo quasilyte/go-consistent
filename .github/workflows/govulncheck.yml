@@ -8,7 +8,7 @@
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "uses": "actions/govulncheck-action@v1",
+          "uses": "golang/govulncheck-action@v1",
           "id": "govulncheck",
         },
       ],
