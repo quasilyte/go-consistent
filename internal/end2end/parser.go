@@ -23,7 +23,7 @@ func (p *TestParser) parseFile(filename string, data []byte) (*TestFile, error) 
 			case "~":
 				re, err := regexp.Compile(text)
 				if err != nil {
-					return nil, fmt.Errorf("%s:%d: %v", filename, line, err)
+					return nil, fmt.Errorf("%s:%d: %w", filename, line, err)
 				}
 				m.re = re
 			case "=":

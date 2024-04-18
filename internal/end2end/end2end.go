@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"go/token"
 	"io"
-	"io/ioutil"
+	"os"
 	"regexp"
 )
 
 // ParseTestFile parses file at specified path using the parser with default settings.
 func ParseTestFile(filename string) (*TestFile, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("read test file: %v", err)
+		return nil, fmt.Errorf("read test file: %w", err)
 	}
 	var p TestParser
 	return p.parseFile(filename, data)
@@ -82,9 +82,9 @@ type TestParser struct {
 
 // ParseFile parses everything from r using filename to make associations.
 func (p *TestParser) ParseFile(filename string, r io.Reader) (*TestFile, error) {
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("read test file: %v", err)
+		return nil, fmt.Errorf("read test file: %w", err)
 	}
 	return p.parseFile(filename, data)
 }

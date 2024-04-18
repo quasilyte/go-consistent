@@ -28,11 +28,11 @@ func TestEnd2End(t *testing.T) {
 
 			var ctxt context
 			ctxt.paths = []string{rel}
-			ctxt.initCheckers()
+			_ = ctxt.initCheckers()
 			if err := ctxt.collectAllCandidates(); err != nil {
 				t.Fatalf("collect candidates: %v", err)
 			}
-			ctxt.assignSuggestions()
+			_ = ctxt.assignSuggestions()
 			visitWarnings(&ctxt, func(pos token.Position, v *opVariant) {
 				text := v.op.name + ": " + v.op.suggested.warning
 				mlist, ok := f.Matchers[pos.Line]
