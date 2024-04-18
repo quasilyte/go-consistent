@@ -1,7 +1,12 @@
 # go-consistent
 
 [![Build Status](https://travis-ci.org/quasilyte/go-consistent.svg?branch=master)](https://travis-ci.org/quasilyte/go-consistent)
+[![tag](https://img.shields.io/github/tag/quasilyte/go-consistent.svg)](https://github.com/quasilyte/go-consistent/releases)
+![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.18-%23007d9c)
+[![GoDoc](https://pkg.go.dev/badge/github.com/quasilyte/go-consistent)](http://pkg.go.dev/github.com/quasilyte/go-consistent)
+[![Go](https://github.com/quasilyte/go-consistent/actions/workflows/go.yml/badge.svg)](https://github.com/quasilyte/go-consistent/actions/workflows/go.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-consistent)](https://goreportcard.com/report/github.com/quasilyte/go-consistent)
+[![License](https://img.shields.io/github/license/quasilyte/go-consistent)](./LICENSE)
 
 Source code analyzer that helps you to make your Go programs more consistent.
 
