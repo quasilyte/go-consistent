@@ -12,7 +12,7 @@ import (
 func ParseTestFile(filename string) (*TestFile, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("read test file: %v", err)
+		return nil, fmt.Errorf("read test file: %w", err)
 	}
 	var p TestParser
 	return p.parseFile(filename, data)
@@ -84,7 +84,7 @@ type TestParser struct {
 func (p *TestParser) ParseFile(filename string, r io.Reader) (*TestFile, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("read test file: %v", err)
+		return nil, fmt.Errorf("read test file: %w", err)
 	}
 	return p.parseFile(filename, data)
 }
