@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -89,7 +90,7 @@ func (ctxt *context) parseFlags() error {
 
 	ctxt.flags.targets = flag.Args()
 	if len(ctxt.flags.targets) == 0 {
-		return fmt.Errorf("not enough positional args (empty targets list)")
+		return errors.New("not enough positional args (empty targets list)")
 	}
 
 	if ctxt.flags.shorterErrLocation {
@@ -106,13 +107,13 @@ func (ctxt *context) parseFlags() error {
 func (ctxt *context) resolveTargets() error {
 	ctxt.paths = gotool.ImportPaths(ctxt.flags.targets)
 	if len(ctxt.paths) == 0 {
-		return fmt.Errorf("targets resolved to an empty import paths list")
+		return errors.New("targets resolved to an empty import paths list")
 	}
 
 	// Filter-out packages using the exclude pattern.
 	excludeRE, err := regexp.Compile(ctxt.flags.exclude)
 	if err != nil {
-		return fmt.Errorf("compiling -exclude regexp: %v", err)
+		return fmt.Errorf("compiling -exclude regexp: %w", err)
 	}
 	paths := ctxt.paths[:0]
 	for _, path := range ctxt.paths {
@@ -179,7 +180,7 @@ func (ctxt *context) collectAllCandidates() error {
 	for _, path := range ctxt.paths {
 		ctxt.infoPrintf("check %q", path)
 		if err := ctxt.collectPathCandidates(path); err != nil {
-			return fmt.Errorf("%s: %v", path, err)
+			return fmt.Errorf("%s: %w", path, err)
 		}
 	}
 	return nil
