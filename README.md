@@ -6,7 +6,7 @@
 [![GoDoc](https://pkg.go.dev/badge/github.com/quasilyte/go-consistent)](http://pkg.go.dev/github.com/quasilyte/go-consistent)
 [![Go](https://github.com/quasilyte/go-consistent/actions/workflows/go.yml/badge.svg)](https://github.com/quasilyte/go-consistent/actions/workflows/go.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-consistent)](https://goreportcard.com/report/github.com/quasilyte/go-consistent)
-[![Dependency Review](https://github.com/quasilyte/go-consistent/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/quasilyte/go-consistent/actions/workflows/govulncheck.yml)
+[![Go Vulnerability Check](https://github.com/quasilyte/go-consistent/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/quasilyte/go-consistent/actions/workflows/govulncheck.yml)
 [![License](https://img.shields.io/github/license/quasilyte/go-consistent)](./LICENSE)
 
 Source code analyzer that helps you to make your Go programs more consistent.
