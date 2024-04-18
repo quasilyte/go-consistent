@@ -1,22 +1,19 @@
 # This file adheres to the YAML5 style.
 {
-  "name": "Dependence Review",
+  "name": "Go vulnerability check",
   "on": ["pull_request"],
-  "permissions": {
-    "contents": "read",
-  },
   "jobs": {
-    "dependence-review": {
-      "name": "Dependence Review",
+    "govulncheck_job": {
+      "name": "Run govulncheck",
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "name": "Checkout repository",
-          "uses": "actions/checkout@v4"  
-        },
-        {
-          "name": "Dependency Review",
-          "uses": "actions/dependency-review-action@v4"
+          "id": "govulncheck"
+          "name": "golang-govulncheck-action",
+          "uses": "golang/govulncheck-action@v1",
+          "with": {
+            "go-package": "./...",
+          },
         },
       ],
     },
