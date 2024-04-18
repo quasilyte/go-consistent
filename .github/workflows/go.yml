@@ -6,20 +6,18 @@ name: Go
 on:
   - push
   - pull_request
-  #on:
-  #  push:
-  #    branches:
-  #      - main
-  #  pull_request:
-  #    branches:
-  #      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.18.x', '1.19.x', '1.20.x', '1.21.x', '1.22.x']
+        go: 
+          - '1.18.x'
+          - '1.19.x'
+          - '1.20.x'
+          - '1.21.x'
+          - '1.22.x'
     name: Go ${{ matrix.go }} job
     steps:
     - uses: actions/checkout@v4
