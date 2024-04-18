@@ -1,7 +1,7 @@
 # This file adheres to the YAML5 style.
 {
   "name": "Dependence Review",
-  "on": ["push", "pull_request"],
+  "on": ["pull_request"],
   "permissions": {
     "contents": "read",
   },
@@ -16,7 +16,7 @@
         },
         {
           "name": "Dependency Review",
-          "uses": "actions/dependency-review-action@v3"
+          "uses": "actions/dependency-review-action@v4"
         },
       ],
     },
