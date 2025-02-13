@@ -15,7 +15,7 @@ Source code analyzer that helps you to make your Go programs more consistent.
 This install the `go-consistent` binary:
 
 ```bash
-go install github.com/quasilyte/go-consistent
+go install github.com/quasilyte/go-consistent@latest
 ```
 
 If go install location is under your system `$PATH`, `go-consistent` command should be available after that.<br>
