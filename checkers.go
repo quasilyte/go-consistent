@@ -640,8 +640,26 @@ func newArgListParensChecker(ctxt *context) checker {
 }
 
 func (c *argListParensChecker) Visit(n ast.Node) bool {
-	call, ok := n.(*ast.CallExpr)
-	if !ok || len(call.Args) < 2 {
+	switch node := n.(type) {
+	case *ast.CallExpr:
+		return c.checkCallExpr(node)
+	case *ast.CompositeLit:
+		return c.checkCompositeLit(node)
+	case *ast.FuncDecl:
+		return c.checkFuncDecl(node)
+	case *ast.FuncLit:
+		return c.checkFuncLit(node)
+	case *ast.FuncType:
+		// Only check FuncType if it's not part of FuncDecl or FuncLit
+		// This handles interface method signatures
+		return c.checkFuncTypeIfStandalone(node)
+	}
+	return true
+}
+
+// checkCallExpr handles function calls (original logic)
+func (c *argListParensChecker) checkCallExpr(call *ast.CallExpr) bool {
+	if len(call.Args) < 2 {
 		return true
 	}
 	lastArg := call.Args[len(call.Args)-1]
@@ -654,9 +672,104 @@ func (c *argListParensChecker) Visit(n ast.Node) bool {
 	rparenLine := c.ctxt.fset.Position(call.Rparen).Line
 	switch rparenLine {
 	case lastArgLine:
-		c.ctxt.mark(n, &c.sameLine)
+		c.ctxt.mark(call, &c.sameLine)
 	case lastArgLine + 1:
-		c.ctxt.mark(n, &c.nextLine)
+		c.ctxt.mark(call, &c.nextLine)
+	}
+	return true
+}
+
+// checkCompositeLit handles struct, slice, map literals
+func (c *argListParensChecker) checkCompositeLit(lit *ast.CompositeLit) bool {
+	if len(lit.Elts) < 2 {
+		return true
+	}
+	lastElt := lit.Elts[len(lit.Elts)-1]
+	lastEltLine := c.ctxt.fset.Position(lastElt.Pos()).Line
+	firstEltLine := c.ctxt.fset.Position(lit.Elts[0].Pos()).Line
+	if firstEltLine == lastEltLine {
+		// Don't track single-line literals.
+		return true
+	}
+	rbracePos := lit.Rbrace
+	if rbracePos == 0 {
+		// No closing brace found
+		return true
+	}
+	rbraceLine := c.ctxt.fset.Position(rbracePos).Line
+	switch rbraceLine {
+	case lastEltLine:
+		c.ctxt.mark(lit, &c.sameLine)
+	case lastEltLine + 1:
+		c.ctxt.mark(lit, &c.nextLine)
+	}
+	return true
+}
+
+// checkFuncDecl handles function declarations
+func (c *argListParensChecker) checkFuncDecl(decl *ast.FuncDecl) bool {
+	if decl.Type == nil || decl.Type.Params == nil {
+		return true
+	}
+	return c.checkFieldList(decl.Type.Params, decl)
+}
+
+// checkFuncLit handles function literals (anonymous functions)
+func (c *argListParensChecker) checkFuncLit(lit *ast.FuncLit) bool {
+	if lit.Type == nil || lit.Type.Params == nil {
+		return true
+	}
+	return c.checkFieldList(lit.Type.Params, lit)
+}
+
+// checkFuncType handles function types (including interface methods)
+func (c *argListParensChecker) checkFuncType(typ *ast.FuncType) bool {
+	if typ.Params == nil {
+		return true
+	}
+	return c.checkFieldList(typ.Params, typ)
+}
+
+// checkFuncTypeIfStandalone handles function types that are not part of FuncDecl/FuncLit
+// This is mainly for interface method signatures
+func (c *argListParensChecker) checkFuncTypeIfStandalone(typ *ast.FuncType) bool {
+	// Check if this FuncType has a parent that is FuncDecl or FuncLit
+	// If so, skip it to avoid duplication
+	if c.ctxt.astinfo.Parents != nil {
+		if parent := c.ctxt.astinfo.Parents[typ]; parent != nil {
+			switch parent.(type) {
+			case *ast.FuncDecl, *ast.FuncLit:
+				// Skip if it's part of a function declaration or literal
+				return true
+			}
+		}
+	}
+	return c.checkFuncType(typ)
+}
+
+// checkFieldList is a helper to check parameter lists
+func (c *argListParensChecker) checkFieldList(params *ast.FieldList, node ast.Node) bool {
+	if len(params.List) < 2 {
+		return true
+	}
+	lastParam := params.List[len(params.List)-1]
+	lastParamLine := c.ctxt.fset.Position(lastParam.Pos()).Line
+	firstParamLine := c.ctxt.fset.Position(params.List[0].Pos()).Line
+	if firstParamLine == lastParamLine {
+		// Don't track single-line parameter lists.
+		return true
+	}
+	rparenPos := params.Closing
+	if rparenPos == 0 {
+		// No closing paren found
+		return true
+	}
+	rparenLine := c.ctxt.fset.Position(rparenPos).Line
+	switch rparenLine {
+	case lastParamLine:
+		c.ctxt.mark(node, &c.sameLine)
+	case lastParamLine + 1:
+		c.ctxt.mark(node, &c.nextLine)
 	}
 	return true
 }
